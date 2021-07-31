@@ -24,17 +24,20 @@ def train_test_split_pro(X, y, test_size, col='race_num'):
     y0 = df0[y_col]
     y1 = df1[y_col]
     
-    # get train test data
-    X_test0 = X0[:int(len(X0)*test_size)]
-    X_train0 = X0[int(len(X0)*test_size):]
-    y_test0 = y0[:int(len(y0)*test_size)]
-    y_train0 = y0[int(len(y0)*test_size):]
+    '''get train test data'''
+    # random sample
+    X_test0 = X0.sample(frac=test_size, random_state=42)
+    X_test1 = X1.sample(frac=test_size, random_state=42)
+    y_test0 = y0.sample(frac=test_size, random_state=42)
+    y_test1 = y1.sample(frac=test_size, random_state=42)
     
-    X_test1 = X1[:int(len(X1)*test_size)]
-    X_train1 = X1[int(len(X1)*test_size):]
-    y_test1 = y1[:int(len(y1)*test_size)]
-    y_train1 = y1[int(len(y1)*test_size):]
+    # training data = full data - testing data
+    X_train0 = X0[~X0.isin(X_test0)].dropna()
+    X_train1 = X1[~X1.isin(X_test0)].dropna()
+    y_train0 = y0[~y0.isin(X_test0)].dropna()
+    y_train1 = y1[~y1.isin(X_test0)].dropna()
     
+    # combine proportions
     X_test = pd.concat([X_test0, X_test1])
     X_train = pd.concat([X_train0, X_train1])
     y_test = pd.concat([y_test0, y_test1])
