@@ -1,4 +1,6 @@
 import streamlit as st
+from st_footer import footer
+
 import numpy as np
 import pandas as pd
 
@@ -87,3 +89,6 @@ st.write('''
          - **Menjie Shen**: naive bayes, SGD, SVM, kNN models
          ''')
 # st.image('contributions.png')
+
+
+footer("&copy; Cinny Lin. 2021.")
