@@ -99,6 +99,7 @@ convert_cat = '''
 convert_cat_section = st.beta_expander("Converting Categorical Variables", False)
 convert_cat_section.markdown(convert_cat)
 
+st.markdown('### Train-Test Split')
 
 st.markdown('---')
 
