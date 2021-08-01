@@ -1,9 +1,14 @@
+# modules for app
+from pandas.core import base
 import streamlit as st
 from st_footer import footer
 
+# modules for data
 import numpy as np
 import pandas as pd
-from models import metrics, logit
+
+# custom modules
+from models import metrics, models
 
 
 st.markdown('# Mitigating Biases in Predicting Crime Recidivism in the U.S.')
@@ -15,7 +20,7 @@ st.write('''
          - **Advisor**: Professor Bruno Abrahao
          ''')
 
-st.markdown('## Project')
+# st.markdown('## Project')
 # st.markdown('## Abstract')
 abstract = '''
         Cinny and Menjie are two data science students who grew up living in Taipei and Shanghai respectively,
@@ -26,7 +31,7 @@ abstract = '''
         to identify and detect racial biases in crime recidivism prediction in different U.S. states.
         '''
 abstract_section = st.beta_expander("Abstract", False)
-abstract_section.write(abstract)
+abstract_section.markdown(abstract)
 
 # st.markdown('## Research Question and Significance')
 significance = '''
@@ -43,7 +48,7 @@ significance = '''
         black defendants were 77 percent more likely to be assigned higher risk scores than white defendants.
         '''
 significance_section = st.beta_expander("Research Question and Significance", False)
-significance_section.write(significance)
+significance_section.markdown(significance)
 
 # st.markdown('## Research Design and Feasibility')
 design = '''
@@ -69,10 +74,10 @@ design = '''
         We could say that COMPAS is not particularly useful and this is another model we propose.
         '''
 design_section = st.beta_expander("Research Design and Feasibility", False)
-design_section.write(design)
+design_section.markdown(design)
 
 
-st.markdown('---')
+# st.markdown('---')
 
 
 st.markdown('## Data')
@@ -88,6 +93,7 @@ df = pd.read_csv('data/compas_florida.csv')
 st.dataframe(df.head(1))
 st.write('Data Size:', df.shape)
 
+
 convert_cat = '''
                 Because `sex` and `race` are categorical variables,
                 when most of our models can only take in numerical values,
@@ -99,10 +105,29 @@ convert_cat = '''
 convert_cat_section = st.beta_expander("Converting Categorical Variables", False)
 convert_cat_section.markdown(convert_cat)
 
-st.markdown('### Train-Test Split')
 
-st.markdown('---')
+st.markdown('### Cross Validation')
+cv = '''
+        We use the `cross_val_predict` method provided by 
+        [sklearn](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_val_predict.html#sklearn.model_selection.cross_val_predict)
+        and uses 10-fold cross validation.'''
+st.markdown(cv)
 
+
+st.markdown('### Input Variables')
+
+# get input columns
+num_cols = df.dtypes[df.dtypes!=object].keys()
+y_index = list(num_cols).index('recidivism_within_2_years')
+y_col = st.selectbox(label='Target variable (y)', options=['recidivism_within_2_years'], 
+                     help='The predicting variable is the ground truth value of whether the person actually reoffended 2 years later.')
+X_cols = st.multiselect(label='Training variables (X)', options=list(num_cols.drop([y_col, 'id', 'COMPASS_determination'])),
+                        default=['sex_num', 'age', 'race_num', 'priors_count', 'juv_fel_count', 'juv_misd_count', 'juv_other_count'],
+                        help='Only numerical columns are visible as options.')
+
+# get data
+y = df[y_col]
+X = df[X_cols]
 
 st.markdown('## Models')
 
@@ -130,38 +155,168 @@ metric_interpret = '''
         The interpretation for this is that to ensure the safety of our society,
         the model would not easily release someone from prison.
         '''
-metric_interpret_section = st.beta_expander("Metrics and Interpretation", False)
-metric_interpret_section.write(metric_interpret)
+metric_interpret_section = st.beta_expander("Model Evaluation: Precision and Recall Metrics", False)
+metric_interpret_section.markdown(metric_interpret)
+
+bias_interpret1 = '''
+        There is currently no universal metric to detect or assess biases in a model. 
+        Thus, we decided to follow the analysis that ProPublica did in its 
+        [machine bias assessment article](https://www.propublica.org/article/machine-bias-risk-assessments-in-criminal-sentencing).
+        
+        One of the tables in the article calculated the percentage of 
+        false positive and false negative predictions for Caucasians and African Americans
+        and saw that "predictions fails differently for black defendants".
+        '''
+bias_interpret2 = '''
+        Analyzing the same data from Broward County, Florida and the same COMPAS assessment tool,
+        ProPublica found that COMPAS "correctly predicts recidivism 61 percent of the time. 
+        But blacks are almost twice as likely as whites to be labeled a higher risk but not actually re-offend. 
+        It makes the opposite mistake among whites: They are much more likely than blacks to be 
+        labeled lower risk but go on to commit other crimes."
+        
+        In our project, we would use similar methods of analysis 
+        and assess bias in our models by interpreting tables like the one shown above.
+        '''
+bias_interpret_section = st.beta_expander("Bias Evaluation: Following Propublica's Assessment", False)
+bias_interpret_section.markdown(bias_interpret1)
+bias_interpret_section.image('bias_table.png')
+bias_interpret_section.write(bias_interpret2)
+
 
 st.markdown('### Baseline Model: COMPAS')
+
+# st.markdown('#### Model Evaluation')
 baseline_accuracy = metrics.get_accuracy(df)
 baseline_precision = metrics.get_precision(df)
 baseline_recall = metrics.get_recall(df)
-st.markdown(f'''
+baseline_eval = f'''
             - **Baseline accuracy** = {baseline_accuracy:.5f}
             - **Baseline precision** = {baseline_precision:.5f}
             - **Baseline recall** = {baseline_recall:.5f}
-            ''')
+            '''
+baseline_eval_section = st.beta_expander("Baseline Model, Model Evaluation", False)
+baseline_eval_section.markdown(baseline_eval)
+
+# st.markdown('#### Bias Evaluation')
+baseline_p = metrics.propublica_analysis(df)
+baseline_bias = f'''
+        |COMPASS                              | White, Asian, etc. | Black or Hispanic |
+        |-------------------------------------|--------------------|-------------------|
+        | Labeled High Risk, Didn’t Re-Offend | {baseline_p[0]}%   | {baseline_p[2]}%  |
+        | Labeled Low Risk, Yet Did Re-Offend | {baseline_p[1]}%   | {baseline_p[3]}%  |
+'''
+baseline_bias_section = st.beta_expander("Baseline Model, Bias Evaluation", False)
+baseline_bias_section.markdown(baseline_bias)
+
+# write interpretation
+st.markdown('#### Interpretation')
+baseline_interpretation = f'''
+        We found that COMPAS correctly predicts recidivism 
+        {int(round(baseline_accuracy,2)*100)} percent of the time. 
+        But blacks are almost {round(baseline_p[2]/baseline_p[0],1)} times
+        as likely as whites to be labeled a higher risk but not actually re-offend. 
+        It makes the opposite mistake among whites: 
+        They are {round(baseline_p[1]/baseline_p[3],1)} times 
+        more likely than blacks to be labeled lower risk but go on to commit other crimes.
+'''
+st.markdown(baseline_interpretation)
+
 
 st.markdown('### Machine Learning Models')
-models = ['Logistic Regression', 'Decision Trees', 'Random Forest'
-          'Naïve Bayes', 'Stochastic Gradient Descent',
-          'Support Vector Machine', 'K Nearest Neighbors',
-          'Artificial Neural Network']
-model_name = st.selectbox("", options=models)
+model_options = ['Logistic Regression', 'Decision Trees', 'Random Forest'
+                 'Naïve Bayes', 'Stochastic Gradient Descent',
+                 'Support Vector Machine', 'K Nearest Neighbors',
+                 'Artificial Neural Network']
+model_name = st.selectbox("Choose a model to assess", options=model_options)
 
-if model_name == 'Logistic regression':
-        pass
+# get model
+if model_name == 'Logistic Regression':
+        df_pred = models.logit(df, X, y)
+
+# st.markdown('#### Model Evaluation')
+model_accuracy = metrics.get_accuracy(df, pred_label=model_name)
+model_precision = metrics.get_precision(df, pred_label=model_name)
+model_recall = metrics.get_recall(df, pred_label=model_name)
+model_eval = f'''
+            - **{model_name} accuracy** = {model_accuracy:.5f}
+            - **{model_name} precision** = {model_precision:.5f}
+            - **{model_name} recall** = {model_recall:.5f}
+            '''
+model_eval_section = st.beta_expander(f"{model_name} Model, Model Evaluation", False)
+model_eval_section.markdown(model_eval)
+
+# st.markdown('#### Bias Evaluation')
+model_p = metrics.propublica_analysis(df, pred_label=model_name)
+model_bias = f'''
+        |{model_name}                         | White, Asian, etc. | Black or Hispanic |
+        |-------------------------------------|--------------------|-------------------|
+        | Labeled High Risk, Didn’t Re-Offend | {model_p[0]}%      | {model_p[2]}%     |
+        | Labeled Low Risk, Yet Did Re-Offend | {model_p[1]}%      | {model_p[3]}%     |
+'''
+model_bias_section = st.beta_expander(f"{model_name} Model, Bias Evaluation", False)
+model_bias_section.markdown(model_bias)
+
+# write interpretation
+st.markdown('#### Interpretation')
+
+# (1) accuracy
+model_interpretation1 = f'''
+        We found that our {model_name} model correctly predicts recidivism 
+        {int(round(model_accuracy,2)*100)}% of the time. '''
+if model_accuracy > baseline_accuracy:
+        model_interpretation11 = f'''
+                *(This is a {round((model_accuracy-baseline_accuracy)/model_accuracy,3)*100}% 
+                higher accuracy than the baseline model.)*'''
+if model_accuracy < baseline_accuracy:
+        model_interpretation11 = f'''
+                *(Our model predicted worse than the baseline model.)*'''
+
+# (2) precision & recall
+if model_precision > baseline_precision:
+        model_interpretation2 = f'''
+                We also see that our {model_name} model has higher precision and lower recall, 
+                meaning that our model was more conservative in our prediction, 
+                and only predicted someone as likely to reoffend when we are very sure; 
+                while the COMPAS model would predict someone as potential risk
+                as long as there is the possibility that the person could reoffend.
+                '''
+if model_precision < baseline_precision:
+        model_interpretation2 = f'''
+                We also see that our {model_name} model has lower precision and higher recall, 
+                meaning that our model would predict someone as potential risk
+                as long as there is the possibility that the person could reoffend;
+                while the COMPAS model was more conservative in its prediction, 
+                and only predicted someone as likely to reoffend when it was very sure.
+                '''
+
+# (3) bias: false positive
+model_interpretation3 = f'''
+        But blacks are almost {round(model_p[2]/model_p[0],1)} times
+        as likely as whites to be labeled a higher risk but not actually re-offend.'''
+
+# (4) bias: false negative
+model_interpretation4 = f'''
+        It makes the opposite mistake among whites: 
+        They are {round(model_p[1]/model_p[3],1)} times 
+        more likely than blacks to be labeled lower risk but go on to commit other crimes.'''
+
+st.markdown(model_interpretation1+model_interpretation11)
+st.markdown(model_interpretation3+model_interpretation4)
+st.markdown(model_interpretation2)
 
 
 st.markdown('---')
 st.markdown('## Distribution of Work')
 work = '''
-        - **Cinny Lin**: logit, decision tree, random forest, ANN, models;
-        metric class functions and baseline comparisons, streamlit app
-        - **Menjie Shen**: naive bayes, SGD, SVM, kNN models
+- **Cinny Lin**: 
+    - **Models**: logit, decision tree, random forest, ANN, models
+    - **Metrics and Interpretation**: metric class functions and baseline comparisons
+    - **Final Deliverable**: streamlit app
+\
+- **Menjie Shen**: 
+    - **Models**: naive bayes, SGD, SVM, kNN models
         '''
-st.write(work)
+st.markdown(work)
 # st.image('contributions.png')
 
 

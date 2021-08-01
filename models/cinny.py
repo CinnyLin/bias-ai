@@ -107,21 +107,19 @@ def get_f1(df, truth_label='recidivism_within_2_years', pred_label='COMPASS_dete
 # --------------- analysis ---------------
 
 def propublica_analysis(df, truth_label='recidivism_within_2_years', \
-                        pred_label='COMPASS_determination', \
-                        race1='Caucasian', race2='African-American'):
+                        pred_label='COMPASS_determination'):
+                        # race1='Caucasian', race2='African-American'):
     '''
     Duplicate Propublilca Analysis
     Prediction Fails Differently for Black Defendants
+    source: https://www.propublica.org/article/machine-bias-risk-assessments-in-criminal-sentencing
     '''
     
     # create filters
     tp, tn, fp, fn = get_filters(df, truth_label, pred_label)
-    try:
-        r1 = (df['race']==race1)
-        r2 = (df['race']==race2)
-    except KeyError:
-        r1 = (df['race_num']==race1)
-        r2 = (df['race_num']==race2)
+    # create race filters
+    r1 = (df['race_num']==0)
+    r2 = (df['race_num']==1)
     
     # get lengths
     fp1 = len(df[fp&r1])
@@ -150,7 +148,11 @@ def propublica_analysis(df, truth_label='recidivism_within_2_years', \
     except ZeroDivisionError:
         p4 = 0
     
-    return p1, p2, p3, p4
+    # return percentages
+    def get_percent(p):
+        return int(round(p,2)*100)
+    
+    return [get_percent(p) for p in [p1, p2, p3, p4]]
 
 
 def plot_scatter(df, truth_label='recidivism_within_2_years', \
