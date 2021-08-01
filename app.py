@@ -11,7 +11,7 @@ import pandas as pd
 from models import metrics, models
 
 
-st.markdown('# Mitigating Biases in Predicting Crime Recidivism in the U.S.')
+st.markdown('# Analyzing Biases in Predicting Crime Recidivism in Broward, Florida')
 st.write('Dean\'s Undergraduate Research Project at NYU Shanghai, Summer 2021')
 
 # st.markdown('## Team')
