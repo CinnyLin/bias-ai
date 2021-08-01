@@ -10,6 +10,9 @@ import pandas as pd
 # custom modules
 from models import metrics, models
 
+title = 'Bias AI' #'Bias in Recidivism Prediction'
+favicon = 'https://cdn.iconscout.com/icon/premium/png-512-thumb/bias-2979240-2483226.png'
+st.set_page_config(page_title=title, page_icon = favicon, layout = 'wide', initial_sidebar_state = 'auto')
 
 st.markdown('# Analyzing Biases in Predicting Crime Recidivism in Broward, Florida')
 st.write('Dean\'s Undergraduate Research Project at NYU Shanghai, Summer 2021')
