@@ -226,7 +226,7 @@ st.markdown(baseline_interpretation)
 
 
 st.markdown('### Machine Learning Models')
-model_options = ['Logistic Regression', 'Decision Trees', 'Random Forest'
+model_options = ['Logistic Regression', 'Decision Trees', 'Random Forest',
                  'Naïve Bayes', 'Stochastic Gradient Descent',
                  'Support Vector Machine', 'K Nearest Neighbors',
                  'Artificial Neural Network']
@@ -235,10 +235,13 @@ model_name = st.selectbox("Choose a model to assess", options=model_options)
 # get model
 if model_name == 'Logistic Regression':
         df_pred = models.logit(df, X, y)
+elif model_name == 'Naïve Bayes':
+        df_pred = models.GaussianNB(df, X, y)
 elif model_name == "Stochastic Gradient Descent":
         df_pred = models.SGD(df, X, y)
 elif model_name == "K Nearest Neighbors":
         df_pred = models.KNN(df, X, y)
+
 # st.markdown('#### Model Evaluation')
 model_accuracy = metrics.get_accuracy(df, pred_label=model_name)
 model_precision = metrics.get_precision(df, pred_label=model_name)

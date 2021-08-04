@@ -17,7 +17,7 @@ def GaussianNB(df, X, y):
     gnb = GaussianNB()
     y_pred = cross_val_predict(gnb, X, y, cv = 10)
     
-    df["Naive Bayes"] = y_pred
+    df["Naïve Bayes"] = y_pred
     return df
 
 def SGD(df, X, y):
