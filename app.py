@@ -236,11 +236,13 @@ model_name = st.selectbox("Choose a model to assess", options=model_options)
 if model_name == 'Logistic Regression':
         df_pred = models.logit(df, X, y)
 elif model_name == 'Naïve Bayes':
-        df_pred = models.GaussianNB(df, X, y)
+        df_pred = models.GNB(df, X, y)
 elif model_name == "Stochastic Gradient Descent":
         df_pred = models.SGD(df, X, y)
 elif model_name == "K Nearest Neighbors":
         df_pred = models.KNN(df, X, y)
+elif model_name == "Support Vector Machine":
+        df_pred = models.SVM(df, X, y)
 
 # st.markdown('#### Model Evaluation')
 model_accuracy = metrics.get_accuracy(df, pred_label=model_name)

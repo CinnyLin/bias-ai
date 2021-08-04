@@ -3,6 +3,10 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.linear_model import SGDClassifier
 from sklearn.model_selection import cross_val_predict
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.pipeline import make_pipeline
+from sklearn.naive_bayes import GaussianNB
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
 
 def logit(df, X, y):
     # model prediction
@@ -13,7 +17,7 @@ def logit(df, X, y):
     df['Logistic Regression'] = y_pred
     return df
 
-def GaussianNB(df, X, y):
+def GNB(df, X, y):
     gnb = GaussianNB()
     y_pred = cross_val_predict(gnb, X, y, cv = 10)
     
@@ -34,3 +38,9 @@ def KNN(df, X, y):
     df["K Nearest Neighbors"] = y_pred
     return df
 
+def SVM(df, X, y):
+    clf = make_pipeline(StandardScaler(), SVC(gamma='auto'))
+    y_pred = cross_val_predict(clf, X, y, cv=10)
+
+    df['Support Vector Machine'] = y_pred
+    return df
