@@ -243,7 +243,13 @@ elif model_name == "K Nearest Neighbors":
         df_pred = models.KNN(df, X, y)
 elif model_name == "Support Vector Machine":
         df_pred = models.SVM(df, X, y)
-
+elif model_name == "Random Forest":
+        df_pred = models.RF(df, X, y)
+elif model_name == 'Decision Trees':
+        df_pred = models.DT(df, X, y)
+elif model_name == 'Artificial Neural Network':
+        df_pred = models.ANN(df, X, y)
+        
 # st.markdown('#### Model Evaluation')
 model_accuracy = metrics.get_accuracy(df, pred_label=model_name)
 model_precision = metrics.get_precision(df, pred_label=model_name)
