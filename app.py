@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 
 # custom modules
 from models import metrics, models
+import utils
 
 title = 'Bias AI' #'Bias in Recidivism Prediction'
 favicon = 'https://cdn.iconscout.com/icon/premium/png-512-thumb/bias-2979240-2483226.png'
@@ -132,46 +133,11 @@ X_cols = st.multiselect(label='Training variables (X)', options=list(num_cols.dr
 y = df[y_col]
 X = df[X_cols]
 
+
 st.markdown('## Models')
 
 # utils
-@st.cache
-def run_model(model_name, df, X, y):
-        if model_name == 'Logistic Regression':
-                y_pred = models.logit(df, X, y)
-                df[model_name] =  y_pred
-        
-        elif model_name == 'Naïve Bayes':
-                y_pred = models.GNB(df, X, y)
-                df[model_name] =  y_pred
-        
-        elif model_name == "Stochastic Gradient Descent":
-                y_pred = models.SGD(df, X, y)
-                df[model_name] =  y_pred
-        
-        elif model_name == "K Nearest Neighbors":
-                y_pred = models.KNN(df, X, y)
-                df[model_name] =  y_pred
-        
-        elif model_name == "Support Vector Machine":
-                y_pred = models.SVM(df, X, y)
-                df[model_name] =  y_pred
-        
-        elif model_name == "Random Forest":
-                y_pred = models.RF(df, X, y)
-                df[model_name] =  y_pred
-        
-        elif model_name == 'Decision Trees':
-                y_pred = models.DT(df, X, y)
-                df[model_name] =  y_pred
-        
-        elif model_name == 'Artificial Neural Network':
-                y_pred = models.ANN(df, X, y)
-                df[model_name] =  y_pred
-                
-        return df
-
-@st.cache()
+@st.cache(allow_output_mutation=True)
 def run_models(model_names, df, X, y):
         for model_name in model_names:
                 if model_name == 'Logistic Regression':
@@ -207,6 +173,15 @@ def run_models(model_names, df, X, y):
                         df[model_name] =  df_pred
                 
         return df
+
+# run all models first after setting X, y 
+model_options = ['Logistic Regression', 'Decision Trees', 'Random Forest',
+                 'Naïve Bayes', 'Stochastic Gradient Descent',
+                 'Support Vector Machine', 'K Nearest Neighbors']
+                #  'Artificial Neural Network']
+# df = run_models(model_options, df, X, y)
+# df.to_csv('data/pred_output.csv', index=False)
+df = pd.read_csv('data/pred_output.csv')
 
 
 # st.markdown('### Metrics and Interpretation')
@@ -303,14 +278,7 @@ baseline_interpretation_section.markdown(baseline_interpretation)
 
 
 st.markdown('### Machine Learning Models')
-model_options = ['Logistic Regression', 'Decision Trees', 'Random Forest',
-                 'Naïve Bayes', 'Stochastic Gradient Descent',
-                 'Support Vector Machine', 'K Nearest Neighbors',
-                 'Artificial Neural Network']
 model_name = st.selectbox("Choose a model to assess", options=model_options)
-
-# get model
-df = run_model(model_name, df, X, y)
 
 # st.markdown('#### Model Evaluation')
 model_accuracy = metrics.get_accuracy(df, pred_label=model_name)
@@ -393,33 +361,23 @@ model_interpretation_section.markdown(model_interpretation2)
 st.markdown('## Compare Model Results')
 
 model_names = st.multiselect("Choose models to compare", options=model_options, default=model_options)
-df = run_model(model_names, df, X, y)
-model_accuracies = []
-model_precisions = []
-for model in model_names:
-        model_accuracy = metrics.get_accuracy(df, pred_label=model)
-        model_precision = metrics.get_precision(df, pred_label=model)
-        model_accuracies.append(model_accuracy)
-        model_precisions.append(model_precision)
-
-fig1 = plt.plot(model_names, model_accuracies, label='accuracy')
-fig2 = plt.plot(model_names, model_precisions, label='precision')
-st.pyplot(fig1)
-st.pyplot(fig2)
+plot_precision = st.checkbox('Also compare precision results?', value=False)
+line_fig = utils.plot_line(df, model_names, precision=plot_precision)
+st.pyplot(line_fig)
 
 
-st.markdown('---')
-st.markdown('## Distribution of Work')
-work = '''
-- **Cinny Lin**: 
-    - **Models**: logit, decision tree, random forest, ANN, models
-    - **Metrics and Interpretation**: metric class functions and baseline comparisons
-    - **Final Deliverable**: streamlit app
-\
-- **Menjie Shen**: 
-    - **Models**: naive bayes, SGD, SVM, kNN models
-        '''
-st.markdown(work)
+# st.markdown('---')
+# st.markdown('## Distribution of Work')
+# work = '''
+# - **Cinny Lin**: 
+#     - **Models**: logit, decision tree, random forest, ANN, models
+#     - **Metrics and Interpretation**: metric class functions and baseline comparisons
+#     - **Final Deliverable**: streamlit app
+# \
+# - **Menjie Shen**: 
+#     - **Models**: naive bayes, SGD, SVM, kNN models
+#         '''
+# st.markdown(work)
 # st.image('contributions.png')
 
 
