@@ -65,7 +65,6 @@ def get_f1(df, truth_label='recidivism_within_2_years', pred_label='COMPASS_dete
 
 def propublica_analysis(df, truth_label='recidivism_within_2_years', \
                         pred_label='COMPASS_determination'):
-                        # race1='Caucasian', race2='African-American'):
     '''
     Duplicate Propublilca Analysis
     Prediction Fails Differently for Black Defendants
@@ -76,33 +75,39 @@ def propublica_analysis(df, truth_label='recidivism_within_2_years', \
     tp, tn, fp, fn = get_filters(df, truth_label, pred_label)
     
     # create race filters
-    r1 = (df['race_num']==0)
-    r2 = (df['race_num']==1)
+    r1 = (df['race']=='Caucasian')
+    r2 = (df['race']=='African-American')
     
     # get lengths
     fp1 = len(df[fp&r1])
     fn1 = len(df[fn&r1])
     fp2 = len(df[fp&r2])
     fn2 = len(df[fn&r2])
+    len1 = len(df[r1])
+    len2 = len(df[r1])
     
     # get probabilities
     try:
-        p1 = fp1/(fp1+fn1)
+        # p1 = fp1/(fp1+fn1)
+        p1 = fp1/len1
     except ZeroDivisionError:
         p1 = 0
     
     try:
-        p2 = fn1/(fp1+fn1)
+        # p2 = fn1/(fp1+fn1)
+        p2 = fn1/len1
     except ZeroDivisionError:
         p2 = 0
     
     try:
-        p3 = fp2/(fp2+fn2)
+        # p3 = fp2/(fp2+fn2)
+        p3 = fp2/len2
     except ZeroDivisionError:
         p3 = 0
     
     try:
-        p4 = fn2/(fp2+fn2)
+        # p4 = fn2/(fp2+fn2)
+        p4 = fn2/len2
     except ZeroDivisionError:
         p4 = 0
         

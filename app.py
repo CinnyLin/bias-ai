@@ -103,8 +103,8 @@ convert_cat = '''
                 when most of our models can only take in numerical values,
                 so we have one-hot-encoded them to binary variables: 
                 - In `sex`, "Male" is encoded as `1`, and "Female" as `0`
-                - In `race`, "African American" and "Hispanic" is encoded as `1`,
-                and "Asian", "Caucasian", "Native American" and "Other" are encoded as `0`
+                - In `race`, "African American" is encoded as `2`,
+                "Caucasian" is encoded as `1`, and other races are encoded as `0`
                 '''
 convert_cat_section = st.beta_expander("Converting Categorical Variables", False)
 convert_cat_section.markdown(convert_cat)
