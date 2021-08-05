@@ -133,6 +133,12 @@ X_cols = st.multiselect(label='Training variables (X)', options=list(num_cols.dr
 y = df[y_col]
 X = df[X_cols]
 
+# plot correlation matrix
+XY = df[X_cols+[y_col]]
+corr_fig = XY.corr().style.background_gradient(cmap='coolwarm')
+corr_matrix_section = st.beta_expander("Columns, Correlation Matrix Plot")
+corr_matrix_section.dataframe(corr_fig)
+
 
 st.markdown('## Models')
 
