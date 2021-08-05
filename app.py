@@ -1,11 +1,11 @@
 # modules for app
-from pandas.core import base
 import streamlit as st
 from st_footer import footer
 
 # modules for data
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 # custom modules
 from models import metrics, models
@@ -134,6 +134,81 @@ X = df[X_cols]
 
 st.markdown('## Models')
 
+# utils
+@st.cache
+def run_model(model_name, df, X, y):
+        if model_name == 'Logistic Regression':
+                y_pred = models.logit(df, X, y)
+                df[model_name] =  y_pred
+        
+        elif model_name == 'Naïve Bayes':
+                y_pred = models.GNB(df, X, y)
+                df[model_name] =  y_pred
+        
+        elif model_name == "Stochastic Gradient Descent":
+                y_pred = models.SGD(df, X, y)
+                df[model_name] =  y_pred
+        
+        elif model_name == "K Nearest Neighbors":
+                y_pred = models.KNN(df, X, y)
+                df[model_name] =  y_pred
+        
+        elif model_name == "Support Vector Machine":
+                y_pred = models.SVM(df, X, y)
+                df[model_name] =  y_pred
+        
+        elif model_name == "Random Forest":
+                y_pred = models.RF(df, X, y)
+                df[model_name] =  y_pred
+        
+        elif model_name == 'Decision Trees':
+                y_pred = models.DT(df, X, y)
+                df[model_name] =  y_pred
+        
+        elif model_name == 'Artificial Neural Network':
+                y_pred = models.ANN(df, X, y)
+                df[model_name] =  y_pred
+                
+        return df
+
+@st.cache()
+def run_models(model_names, df, X, y):
+        for model_name in model_names:
+                if model_name == 'Logistic Regression':
+                        df_pred = models.logit(df, X, y)
+                        df[model_name] =  df_pred
+                
+                elif model_name == 'Naïve Bayes':
+                        df_pred = models.GNB(df, X, y)
+                        df[model_name] =  df_pred
+                
+                elif model_name == "Stochastic Gradient Descent":
+                        df_pred = models.SGD(df, X, y)
+                        df[model_name] =  df_pred
+                
+                elif model_name == "K Nearest Neighbors":
+                        df_pred = models.KNN(df, X, y)
+                        df[model_name] =  df_pred
+                
+                elif model_name == "Support Vector Machine":
+                        df_pred = models.SVM(df, X, y)
+                        df[model_name] =  df_pred
+                
+                elif model_name == "Random Forest":
+                        df_pred = models.RF(df, X, y)
+                        df[model_name] =  df_pred
+                
+                elif model_name == 'Decision Trees':
+                        df_pred = models.DT(df, X, y)
+                        df[model_name] =  df_pred
+                
+                elif model_name == 'Artificial Neural Network':
+                        df_pred = models.ANN(df, X, y)
+                        df[model_name] =  df_pred
+                
+        return df
+
+
 # st.markdown('### Metrics and Interpretation')
 metric_interpret = '''
         The precision/recall metrics are especially interesting for us because of how it can be easily interpreted for our project.
@@ -212,7 +287,7 @@ baseline_bias_section = st.beta_expander("Baseline Model, Bias Evaluation", Fals
 baseline_bias_section.markdown(baseline_bias)
 
 # write interpretation
-st.markdown('#### Interpretation')
+# st.markdown('#### Interpretation')
 baseline_interpretation = f'''
         We found that COMPAS correctly predicts recidivism 
         {int(round(baseline_accuracy,2)*100)} percent of the time. 
@@ -222,7 +297,9 @@ baseline_interpretation = f'''
         They are {round(baseline_p[1]/baseline_p[3],1)} times 
         more likely than blacks to be labeled lower risk but go on to commit other crimes.
 '''
-st.markdown(baseline_interpretation)
+# st.markdown(baseline_interpretation)
+baseline_interpretation_section = st.beta_expander("Baseline Model, Interpretation", False)
+baseline_interpretation_section.markdown(baseline_interpretation)
 
 
 st.markdown('### Machine Learning Models')
@@ -233,23 +310,8 @@ model_options = ['Logistic Regression', 'Decision Trees', 'Random Forest',
 model_name = st.selectbox("Choose a model to assess", options=model_options)
 
 # get model
-if model_name == 'Logistic Regression':
-        df_pred = models.logit(df, X, y)
-elif model_name == 'Naïve Bayes':
-        df_pred = models.GNB(df, X, y)
-elif model_name == "Stochastic Gradient Descent":
-        df_pred = models.SGD(df, X, y)
-elif model_name == "K Nearest Neighbors":
-        df_pred = models.KNN(df, X, y)
-elif model_name == "Support Vector Machine":
-        df_pred = models.SVM(df, X, y)
-elif model_name == "Random Forest":
-        df_pred = models.RF(df, X, y)
-elif model_name == 'Decision Trees':
-        df_pred = models.DT(df, X, y)
-elif model_name == 'Artificial Neural Network':
-        df_pred = models.ANN(df, X, y)
-        
+df = run_model(model_name, df, X, y)
+
 # st.markdown('#### Model Evaluation')
 model_accuracy = metrics.get_accuracy(df, pred_label=model_name)
 model_precision = metrics.get_precision(df, pred_label=model_name)
@@ -274,7 +336,7 @@ model_bias_section = st.beta_expander(f"{model_name} Model, Bias Evaluation", Fa
 model_bias_section.markdown(model_bias)
 
 # write interpretation
-st.markdown('#### Interpretation')
+# st.markdown('#### Interpretation')
 
 # (1) accuracy
 model_interpretation1 = f'''
@@ -317,9 +379,33 @@ model_interpretation4 = f'''
         They are {round(model_p[1]/model_p[3],1)} times 
         more likely than blacks to be labeled lower risk but go on to commit other crimes.'''
 
-st.markdown(model_interpretation1+model_interpretation11)
-st.markdown(model_interpretation3+model_interpretation4)
-st.markdown(model_interpretation2)
+# st.markdown(model_interpretation1+model_interpretation11)
+# st.markdown(model_interpretation3+model_interpretation4)
+# st.markdown(model_interpretation2)
+model_interpretation_section = st.beta_expander("Machine Learning Model, Interpretation", False)
+model_interpretation_section.markdown(model_interpretation1+model_interpretation11)
+model_interpretation_section.markdown(model_interpretation3+model_interpretation4)
+model_interpretation_section.markdown(model_interpretation2)
+
+
+# st.markdown('---')
+
+st.markdown('## Compare Model Results')
+
+model_names = st.multiselect("Choose models to compare", options=model_options, default=model_options)
+df = run_model(model_names, df, X, y)
+model_accuracies = []
+model_precisions = []
+for model in model_names:
+        model_accuracy = metrics.get_accuracy(df, pred_label=model)
+        model_precision = metrics.get_precision(df, pred_label=model)
+        model_accuracies.append(model_accuracy)
+        model_precisions.append(model_precision)
+
+fig1 = plt.plot(model_names, model_accuracies, label='accuracy')
+fig2 = plt.plot(model_names, model_precisions, label='precision')
+st.pyplot(fig1)
+st.pyplot(fig2)
 
 
 st.markdown('---')
