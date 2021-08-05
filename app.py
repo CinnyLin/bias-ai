@@ -254,7 +254,7 @@ baseline_eval_section.markdown(baseline_eval)
 # st.markdown('#### Bias Evaluation')
 baseline_p = metrics.propublica_analysis(df)
 baseline_bias = f'''
-        |COMPASS                              | White, Asian, etc. | Black or Hispanic |
+        |COMPASS                              | White & others     | Black & Hispanic  |
         |-------------------------------------|--------------------|-------------------|
         | Labeled High Risk, Didn’t Re-Offend | {baseline_p[0]}%   | {baseline_p[2]}%  |
         | Labeled Low Risk, Yet Did Re-Offend | {baseline_p[1]}%   | {baseline_p[3]}%  |
@@ -296,7 +296,7 @@ model_eval_section.markdown(model_eval)
 # st.markdown('#### Bias Evaluation')
 model_p = metrics.propublica_analysis(df, pred_label=model_name)
 model_bias = f'''
-        |{model_name}                         | White, Asian, etc. | Black or Hispanic |
+        |{model_name}                         | White & others     | Black & Hispanic  |
         |-------------------------------------|--------------------|-------------------|
         | Labeled High Risk, Didn’t Re-Offend | {model_p[0]}%      | {model_p[2]}%     |
         | Labeled Low Risk, Yet Did Re-Offend | {model_p[1]}%      | {model_p[3]}%     |
@@ -368,9 +368,27 @@ if model_name == 'Logistic Regression':
 st.markdown('## Compare Model Results')
 
 model_names = st.multiselect("Choose models to compare", options=model_options, default=model_options)
-plot_precision = st.checkbox('Also compare precision results?', value=False)
+
+model_line_section = st.beta_expander("All Selected Models, Model Evaluation Metrics, Line Plot", False)
+plot_precision = model_line_section.checkbox('Also compare precision results?', value=False)
 line_fig = utils.plot_line(df, model_names, precision=plot_precision)
-st.pyplot(line_fig)
+model_line_section.pyplot(line_fig)
+
+model_heatmap_section = st.beta_expander("All Selected Models, Bias Evaluation Table, Heatmap Plot", False)
+
+# initialize with baseline compas
+models_p = list()
+model_p = metrics.propublica_analysis(df)
+model_p_arr = np.array([[model_p[0], model_p[2]], [model_p[1], model_p[3]]])
+models_p.append(model_p_arr)
+# get model probs
+for model_name in model_names:
+        model_p = metrics.propublica_analysis(df, pred_label=model_name)
+        model_p_arr = np.array([[model_p[0], model_p[2]], [model_p[1], model_p[3]]])
+        models_p.append(model_p_arr)
+
+heatmap_fig = utils.plot_heatmap(model_names, models_p)
+model_heatmap_section.pyplot(heatmap_fig)
 
 
 # st.markdown('---')

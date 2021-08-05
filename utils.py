@@ -1,5 +1,7 @@
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib
 from models import metrics, models 
 
 def plot_line(df, model_names, precision=False):
@@ -73,3 +75,95 @@ def plot_scatter(df, y='Logistic Regression Prob', threshold=0.5):
     fig.text(0.92, 0.3, 'Ground Truth Did Not Re-offend', va='center', rotation='vertical')
     
     return fig
+
+
+def plot_heatmap(model_names, data, 
+                 row_labels=["False Positive", "False Negative"], col_labels=["White", "Black"]):
+    
+    fig, ax = plt.subplots(nrows=2, ncols=4,  sharex=True, sharey=True, figsize=(10, 10))
+    plt.subplots_adjust(top=4.5, bottom=3, right=6, left=3.5, wspace=0.05, hspace=0.05)
+    
+    fontsize = 20
+    
+    for i in range(8):
+        ax = plt.subplot(2, 4, i+1)
+        im = ax.imshow(data[i], cmap="YlOrRd")
+
+        annotate_heatmap(im, valfmt="{x:.0f}%", size=fontsize)
+
+        ax.set_xticks(np.arange(data[i].shape[1]))
+        ax.set_yticks(np.arange(data[i].shape[0]))
+        ax.set_xticklabels(col_labels, size=fontsize)
+        ax.set_yticklabels(row_labels, size=fontsize)
+        ax.tick_params(top=True, bottom=False,
+                       labeltop=True, labelbottom=False)
+        plt.setp(ax.get_xticklabels(), rotation=-30, ha="right",
+                 rotation_mode="anchor")
+
+        if i == 0:
+            ax.set_xlabel('Baseline COMPAS', size=fontsize)
+        else:
+            ax.set_xlabel(model_names[i-1], size=fontsize)
+
+        ax.spines[:].set_visible(False) # remove grid
+
+    return fig
+
+
+def annotate_heatmap(im, data=None, valfmt="{x:.2f}",
+                     textcolors=("black", "white"),
+                     threshold=None, **textkw):
+    """
+    A function to annotate a heatmap.
+
+    Parameters
+    ----------
+    im
+        The AxesImage to be labeled.
+    data
+        Data used to annotate.  If None, the image's data is used.  Optional.
+    valfmt
+        The format of the annotations inside the heatmap.  This should either
+        use the string format method, e.g. "$ {x:.2f}", or be a
+        `matplotlib.ticker.Formatter`.  Optional.
+    textcolors
+        A pair of colors.  The first is used for values below a threshold,
+        the second for those above.  Optional.
+    threshold
+        Value in data units according to which the colors from textcolors are
+        applied.  If None (the default) uses the middle of the colormap as
+        separation.  Optional.
+    **kwargs
+        All other arguments are forwarded to each call to `text` used to create
+        the text labels.
+    """
+
+    if not isinstance(data, (list, np.ndarray)):
+        data = im.get_array()
+
+    # Normalize the threshold to the images color range.
+    if threshold is not None:
+        threshold = im.norm(threshold)
+    else:
+        threshold = im.norm(data.max())/2.
+
+    # Set default alignment to center, but allow it to be
+    # overwritten by textkw.
+    kw = dict(horizontalalignment="center",
+              verticalalignment="center")
+    kw.update(textkw)
+
+    # Get the formatter in case a string is supplied
+    if isinstance(valfmt, str):
+        valfmt = matplotlib.ticker.StrMethodFormatter(valfmt)
+
+    # Loop over the data and create a `Text` for each "pixel".
+    # Change the text's color depending on the data.
+    texts = []
+    for i in range(data.shape[0]):
+        for j in range(data.shape[1]):
+            kw.update(color=textcolors[int(im.norm(data[i, j]) > threshold)])
+            text = im.axes.text(j, i, valfmt(data[i, j], None), **kw)
+            texts.append(text)
+
+    return texts
