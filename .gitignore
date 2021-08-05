@@ -1,4 +1,7 @@
 /__pycache__
 /.ipynb_checkpoints
+
 /models/.ipynb_checkpoints
 /models/__pycache__
+
+/plots
