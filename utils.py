@@ -28,3 +28,48 @@ def plot_line(df, model_names, precision=False):
     
     ax.legend()
     return fig
+
+def plot_scatter(df, y='Logistic Regression Prob', threshold=0.5):
+    race_filter = df['race_num']==1
+    truth_filter = df['recidivism_within_2_years']==1
+    prob_filter = df[y]>=threshold
+    
+    fig, _ = plt.subplots(nrows=2, ncols=2,  
+                          sharex=True, sharey=True, 
+                          figsize=(20, 20))
+    plt.subplots_adjust(wspace=0.05, hspace=0.05) 
+
+    ax1 = plt.subplot(2, 2, 1)
+    df1 = df[race_filter&truth_filter]
+    ax1.plot(df1[prob_filter][y], 'o', c='#C0392B')
+    ax1.plot(df1[(~prob_filter)][y], 'o', c='#2874A6')
+    ax1.set_xticks([])
+    ax1.set_yticks([0, 0.5, 1])
+    ax1.set_title('African American & Hispanic')
+
+    ax2 = plt.subplot(2, 2, 2)
+    df2 = df[(~race_filter)&truth_filter]
+    ax2.plot(df2[prob_filter][y], 'o', c='#C0392B')
+    ax2.plot(df2[(~prob_filter)][y], 'o', c='#2874A6')
+    ax2.set_xticks([])
+    ax2.set_yticks([0, 0.5, 1])
+    ax2.set_title('Caucasian & others')
+
+    ax3 = plt.subplot(2, 2, 3)
+    df3 = df[race_filter&(~truth_filter)]
+    ax3.plot(df3[prob_filter][y], 'o', c='#C0392B')
+    ax3.plot(df3[(~prob_filter)][y], 'o', c='#2874A6')
+    ax3.set_xticks([])
+
+    ax4 = plt.subplot(2, 2, 4)
+    df4 = df[(~race_filter) & (~truth_filter)]
+    ax4.plot(df1[prob_filter][y], 'o', c='#C0392B')
+    ax4.plot(df1[(~prob_filter)][y], 'o', c='#2874A6')
+    ax4.set_xticks([])
+    ax4.set_yticks([0, 0.5, 1])
+
+    fig.text(0.09, 0.5, 'Re-offending Probability', va='center', rotation='vertical')
+    fig.text(0.92, 0.66, 'Ground Truth Re-offended', ha='center', rotation='vertical')
+    fig.text(0.92, 0.3, 'Ground Truth Did Not Re-offend', va='center', rotation='vertical')
+    
+    return fig

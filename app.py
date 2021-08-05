@@ -141,36 +141,37 @@ st.markdown('## Models')
 def run_models(model_names, df, X, y):
         for model_name in model_names:
                 if model_name == 'Logistic Regression':
-                        df_pred = models.logit(df, X, y)
-                        df[model_name] =  df_pred
+                        y_pred, y_pred_prob = models.logit(X, y)
+                        df[model_name] =  y_pred
+                        df[f'{model_name} Prob'] =  y_pred_prob
                 
                 elif model_name == 'Naïve Bayes':
-                        df_pred = models.GNB(df, X, y)
-                        df[model_name] =  df_pred
+                        y_pred = models.GNB(X, y)
+                        df[model_name] =  y_pred
                 
                 elif model_name == "Stochastic Gradient Descent":
-                        df_pred = models.SGD(df, X, y)
-                        df[model_name] =  df_pred
+                        y_pred = models.SGD(X, y)
+                        df[model_name] =  y_pred
                 
                 elif model_name == "K Nearest Neighbors":
-                        df_pred = models.KNN(df, X, y)
-                        df[model_name] =  df_pred
+                        y_pred = models.KNN(X, y)
+                        df[model_name] =  y_pred
                 
                 elif model_name == "Support Vector Machine":
-                        df_pred = models.SVM(df, X, y)
-                        df[model_name] =  df_pred
+                        y_pred = models.SVM(X, y)
+                        df[model_name] =  y_pred
                 
                 elif model_name == "Random Forest":
-                        df_pred = models.RF(df, X, y)
-                        df[model_name] =  df_pred
+                        y_pred = models.RF(X, y)
+                        df[model_name] =  y_pred
                 
                 elif model_name == 'Decision Trees':
-                        df_pred = models.DT(df, X, y)
-                        df[model_name] =  df_pred
+                        y_pred = models.DT(X, y)
+                        df[model_name] =  y_pred
                 
                 elif model_name == 'Artificial Neural Network':
-                        df_pred = models.ANN(df, X, y)
-                        df[model_name] =  df_pred
+                        y_pred = models.ANN(X, y)
+                        df[model_name] =  y_pred
                 
         return df
 
@@ -179,9 +180,9 @@ model_options = ['Logistic Regression', 'Decision Trees', 'Random Forest',
                  'Naïve Bayes', 'Stochastic Gradient Descent',
                  'Support Vector Machine', 'K Nearest Neighbors']
                 #  'Artificial Neural Network']
-# df = run_models(model_options, df, X, y)
-# df.to_csv('data/pred_output.csv', index=False)
-df = pd.read_csv('data/pred_output.csv')
+df = run_models(model_options, df, X, y)
+df.to_csv('data/pred_output.csv', index=False)
+# df = pd.read_csv('data/pred_output.csv')
 
 
 # st.markdown('### Metrics and Interpretation')
@@ -350,10 +351,16 @@ model_interpretation4 = f'''
 # st.markdown(model_interpretation1+model_interpretation11)
 # st.markdown(model_interpretation3+model_interpretation4)
 # st.markdown(model_interpretation2)
-model_interpretation_section = st.beta_expander("Machine Learning Model, Interpretation", False)
+model_interpretation_section = st.beta_expander(f"{model_name} Model, Interpretation", False)
 model_interpretation_section.markdown(model_interpretation1+model_interpretation11)
 model_interpretation_section.markdown(model_interpretation3+model_interpretation4)
 model_interpretation_section.markdown(model_interpretation2)
+
+# (5) bias: scatter plot
+if model_name == 'Logistic Regression':
+        model_scatter_section = st.beta_expander(f"{model_name} Model, Scatter Plot", False)
+        scatter_fig = utils.plot_scatter(df)
+        model_scatter_section.pyplot(scatter_fig)
 
 
 # st.markdown('---')

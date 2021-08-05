@@ -11,61 +11,44 @@ from sklearn.svm import SVC
 from sklearn import tree
 from sklearn.neural_network import MLPClassifier
 
-def logit(df, X, y):
-    # model prediction
+def logit(X, y):
     lr = LogisticRegression()
     y_pred = cross_val_predict(lr, X, y, cv=10)
-    
-    # data prep
-    df['Logistic Regression'] = y_pred
-    return y_pred
+    y_pred_prob = cross_val_predict(lr, X, y, cv=10, method='predict_proba')[:,1]
+    return y_pred, y_pred_prob
 
-def GNB(df, X, y):
+def GNB(X, y):
     gnb = GaussianNB()
     y_pred = cross_val_predict(gnb, X, y, cv = 10)
-    
-    df["Naïve Bayes"] = y_pred
     return y_pred
 
-def SGD(df, X, y):
+def SGD(X, y):
     clf = SGDClassifier(loss="hinge", penalty="l2", max_iter=5)
     y_pred = cross_val_predict(clf, X, y, cv =10)
-
-    df["Stochastic Gradient Descent"] = y_pred
     return y_pred
 
-def KNN(df, X, y):
+def KNN(X, y):
     neigh = KNeighborsClassifier()
     y_pred = cross_val_predict(neigh, X, y, cv=10)
-
-    df["K Nearest Neighbors"] = y_pred
     return y_pred
 
-def SVM(df, X, y):
+def SVM(X, y):
     clf = make_pipeline(StandardScaler(), SVC(gamma='auto'))
     y_pred = cross_val_predict(clf, X, y, cv=10)
-
-    df['Support Vector Machine'] = y_pred
     return y_pred
 
-def RF(df, X, y):
+def RF(X, y):
     clf = RandomForestClassifier(max_depth=2, random_state=0)
     y_pred = cross_val_predict(clf, X, y, cv=10)
-
-    df['Random Forest'] = y_pred
     return y_pred 
 
-def DT(df, X, y):
+def DT(X, y):
     clf = tree.DecisionTreeClassifier()
     y_pred = cross_val_predict(clf, X, y, cv=10)
-
-    df['Decision Trees'] = y_pred
     return y_pred
 
-def ANN(df, X, y):
+def ANN(X, y):
     clf = MLPClassifier(solver='lbfgs', alpha=1e-5, hidden_layer_sizes=(5, 2))
     y_pred = cross_val_predict(clf, X, y, cv=10)
-
-    df['Artificial Neural Network'] = y_pred
     return y_pred
 
