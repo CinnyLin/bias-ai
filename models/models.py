@@ -10,6 +10,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 from sklearn import tree
 from sklearn.neural_network import MLPClassifier
+from sklearn.model_selection import GridSearchCV
 
 def logit(X, y):
     lr = LogisticRegression()
@@ -38,8 +39,19 @@ def SVM(X, y):
     return y_pred
 
 def RF(X, y):
-    clf = RandomForestClassifier(max_depth=2, random_state=0)
+    # param_test1= {'n_estimators':range(100,200,5)}  
+    # gsearch1= GridSearchCV(estimator = RandomForestClassifier(min_samples_split=10,  
+    #                              min_samples_leaf=2,max_depth=10 ,bootstrap = True, max_features='sqrt' ,random_state=42),param_grid =param_test1, scoring='accuracy',cv=5)  
+    clf = RandomForestClassifier(n_estimators = 144,
+ min_samples_split = 10,
+ min_samples_leaf = 2,
+ max_features = 'sqrt',
+ max_depth = 10,
+ bootstrap = True,
+ )
     y_pred = cross_val_predict(clf, X, y, cv=10)
+    # gsearch1.fit(X,y)
+    # y_pred = gsearch1.predict(X)
     return y_pred 
 
 def DT(X, y):
