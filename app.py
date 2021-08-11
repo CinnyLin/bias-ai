@@ -148,8 +148,8 @@ st.markdown('## Models')
 
 # utils
 @st.cache(allow_output_mutation=True)
-def run_models(model_names, df, X, y):
-        for model_name in model_names:
+def run_models(model_options, df, X, y):
+        for model_name in model_options:
                 if model_name == 'Logistic Regression':
                         y_pred, y_pred_prob = models.logit(X, y)
                         df[model_name] =  y_pred
@@ -335,7 +335,7 @@ baseline_eval_section.markdown(baseline_eval)
 # st.markdown('#### Bias Evaluation')
 baseline_p = metrics.propublica_analysis(df)
 baseline_bias = f'''
-        |COMPASS                              | White & others     | Black & Hispanic  |
+        |COMPASS                              | White              | Black             |
         |-------------------------------------|--------------------|-------------------|
         | Labeled High Risk, Didn’t Re-Offend | {baseline_p[0]}%   | {baseline_p[2]}%  |
         | Labeled Low Risk, Yet Did Re-Offend | {baseline_p[1]}%   | {baseline_p[3]}%  |
@@ -377,7 +377,7 @@ model_eval_section.markdown(model_eval)
 # st.markdown('#### Bias Evaluation')
 model_p = metrics.propublica_analysis(df, pred_label=model_name)
 model_bias = f'''
-        |{model_name}                         | White & others     | Black & Hispanic  |
+        |{model_name}                         | White              | Black             |
         |-------------------------------------|--------------------|-------------------|
         | Labeled High Risk, Didn’t Re-Offend | {model_p[0]}%      | {model_p[2]}%     |
         | Labeled Low Risk, Yet Did Re-Offend | {model_p[1]}%      | {model_p[3]}%     |
@@ -448,12 +448,21 @@ if model_name == 'Logistic Regression':
 
 st.markdown('## Compare Model Results')
 
-model_names = st.multiselect("Choose models to compare", options=model_options, default=model_options)
+# model_names = st.multiselect("Choose models to compare", options=model_options, default=model_options)
 
-model_line_section = st.beta_expander("All Selected Models, Model Evaluation Metrics, Line Plot", False)
+model_line_section = st.beta_expander("All Models, Model Evaluation Metrics, Line Plot", False)
 plot_precision = model_line_section.checkbox('Also compare precision results?', value=False)
-line_fig = utils.plot_line(df, model_names, precision=plot_precision)
-model_line_section.pyplot(line_fig)
+model_line_fig = utils.plot_line_model(df, model_options, precision=plot_precision)
+model_line_section.pyplot(model_line_fig)
+
+fairness_line_section = st.beta_expander("All Models, Bias Evaluation Metrics, Line Plot", False)
+plot_dp = fairness_line_section.checkbox('Compare demographic parity?', value=False)
+plot_eop = fairness_line_section.checkbox('Compare equal opportunity?', value=True)
+plot_eod = fairness_line_section.checkbox('Compare equalized odds?', value=False)
+plot_ca = fairness_line_section.checkbox('Compare calibration?', value=False)
+fairness_line_fig = utils.plot_line_fairness(df, model_options,
+                                             dp=plot_dp, eop=plot_eop, eod=plot_eod, ca=plot_ca)
+fairness_line_section.pyplot(fairness_line_fig)
 
 model_heatmap_section = st.beta_expander("All Selected Models, Bias Evaluation Table, Heatmap Plot", False)
 
@@ -463,12 +472,12 @@ model_p = metrics.propublica_analysis(df)
 model_p_arr = np.array([[model_p[0], model_p[2]], [model_p[1], model_p[3]]])
 models_p.append(model_p_arr)
 # get model probs
-for model_name in model_names:
+for model_name in model_options:
         model_p = metrics.propublica_analysis(df, pred_label=model_name)
         model_p_arr = np.array([[model_p[0], model_p[2]], [model_p[1], model_p[3]]])
         models_p.append(model_p_arr)
 
-heatmap_fig = utils.plot_heatmap(model_names, models_p)
+heatmap_fig = utils.plot_heatmap(model_options, models_p)
 model_heatmap_section.pyplot(heatmap_fig)
 
 st.markdown('## Reducing Bias')
@@ -501,14 +510,14 @@ model_p_drop_race = metrics.propublica_analysis(df_drop_race)
 model_p_drop_race_arr = np.array([[model_p_drop_race[0], model_p_drop_race[2]], [model_p_drop_race[1], model_p_drop_race[3]]])
 models_p_drop_race.append(model_p_drop_race_arr)
 # get model probs
-for model_name in model_names:
+for model_name in model_options:
         model_p_drop_race = metrics.propublica_analysis(df_drop_race, pred_label=model_name)
         model_p_drop_race_arr = np.array([[model_p_drop_race[0], model_p_drop_race[2]], [model_p_drop_race[1], model_p_drop_race[3]]])
         models_p_drop_race.append(model_p_drop_race_arr)
 
 models_p_diff = np.subtract(models_p, models_p_drop_race)
 
-heatmap_fig_drop_race = utils.plot_heatmap(model_names, models_p_diff)
+heatmap_fig_drop_race = utils.plot_heatmap(model_options, models_p_diff)
 naive_reduce_bias_section.pyplot(heatmap_fig_drop_race)
 
 

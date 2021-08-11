@@ -4,7 +4,11 @@ import matplotlib.pyplot as plt
 import matplotlib
 from models import metrics, models 
 
-def plot_line(df, model_names, precision=False):
+def plot_line_model(df, model_names, precision=False):
+    '''
+    Line plot for model evaluation
+    '''
+    
     fig, ax = plt.subplots(figsize=(20,7))
     
     # get data
@@ -24,12 +28,57 @@ def plot_line(df, model_names, precision=False):
     plt.plot(model_names, model_accuracies, label='accuracy', color='#D64949')
     plt.axhline(baseline_accuracy, alpha=0.8, linestyle='--', color='#FF5733', label='baseline accuracy')
     
-    if precision:
+    if precision==True:
         plt.plot(model_names, model_precisions, label='precision', color='#2E4FBD')
         plt.axhline(baseline_precision, alpha=0.8, linestyle='--', color='#6495ED', label='baseline precision')
     
     ax.legend()
     return fig
+
+def plot_line_fairness(df, model_names, 
+                       dp=False, eop=False, eod=False, ca=False):
+    '''
+    Line plot for fairness evaluation
+    '''
+    
+    fig, ax = plt.subplots(figsize=(20,7))
+    
+    # get data
+    bsl_dp, bsl_eop, bsl_eod, bsl_ca = metrics.fairness_metrics(df)
+    
+    mdl_dps = []
+    mdl_eops = []
+    mdl_eods = []
+    mdl_cas = []
+
+    for model in model_names:
+        mdl_dp, mdl_eop, mdl_eod, mdl_ca = metrics.fairness_metrics(df, pred_label=model)
+        mdl_dps.append(mdl_dp)
+        mdl_eops.append(mdl_eop)
+        mdl_eods.append(mdl_eod)
+        mdl_cas.append(mdl_ca)
+    
+    # plot
+    if dp:
+        plt.plot(model_names, mdl_dps, label='demographic parity', color='#2E4FBD') #blue
+        plt.axhline(bsl_dp, alpha=0.8, linestyle='--', color='#6495ED', label='baseline demographic parity')
+        
+    if eop:
+        plt.plot(model_names, mdl_eops, label='equal opportunity', color='#D64949') #red
+        plt.axhline(bsl_eop, alpha=0.8, linestyle='--', color='#FF5733', label='baseline equal opportunity')
+    
+    if eod:
+        plt.plot(model_names, mdl_eods, label='equalized odds', color='#097969') #green
+        plt.axhline(bsl_eod, alpha=0.8, linestyle='--', color='#2AAA8A', label='baseline equalized odds')
+    
+    if ca:
+        plt.plot(model_names, mdl_cas, label='calibration', color='#702963') #purple
+        plt.axhline(bsl_ca, alpha=0.8, linestyle='--', color='#AA336A', label='baseline calibration')
+    
+    ax.legend()
+    return fig
+
+
 
 def plot_scatter(df, y='Logistic Regression Prob', threshold=0.5):
     race_filter1 = df['African_American']==1
