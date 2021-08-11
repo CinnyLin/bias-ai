@@ -139,8 +139,12 @@ X = df[X_cols]
 
 # plot correlation matrix
 XY = df[X_cols+[y_col]]
-corr_fig = XY.corr().style.background_gradient(cmap='coolwarm')
 corr_matrix_section = st.beta_expander("Columns, Correlation Matrix Plot")
+axis = corr_matrix_section.radio("Comparison axis:", ["column-wise", "row-wise"])
+if axis=="column-wise":
+        corr_fig = XY.corr().style.background_gradient(cmap='coolwarm', axis=1)
+if axis=="row-wise":
+        corr_fig = XY.corr().style.background_gradient(cmap='coolwarm', axis=0)
 corr_matrix_section.dataframe(corr_fig)
 
 
@@ -249,12 +253,12 @@ bias_interpret2 = '''
         In our project, we would use similar methods of analysis 
         and assess bias in our models by interpreting tables like the one shown above.
         '''
-# bias_interpret_section = st.beta_expander("Bias Evaluation: Following Propublica's Assessment", False)
-# bias_interpret_section.markdown(bias_interpret1)
-# bias_interpret_section.image('bias_table.png')
-# bias_interpret_section.write(bias_interpret2)
+bias_interpret_section = st.beta_expander("Bias Evaluation: Following Propublica's Assessment", False)
+bias_interpret_section.markdown(bias_interpret1)
+bias_interpret_section.image('bias_table.png')
+bias_interpret_section.write(bias_interpret2)
 
-bias_interpret = '''
+bias_discussion = '''
         There is currently no universal metric to detect or assess biases in a model. 
         
         ProPublica has found that the COMPAS tool was biased for being twice as likely to falsely predict
@@ -272,8 +276,8 @@ bias_interpret = '''
         That would be considered label bias.
         This project focuses on model biases, assuming that we are discussing data with correct labels.
         '''
-bias_interpret_section = st.beta_expander("Bias Evaluation: Discussion on Model Bias and Data Bias", False)
-bias_interpret_section.markdown(bias_interpret)
+bias_discussion_section = st.beta_expander("Bias Evaluation: Discussion on Model Bias and Data Bias", False)
+bias_discussion_section.markdown(bias_discussion)
 
 bias_metrics = '''
         Notions of fairness varies and are oftentimes conflicting. 
@@ -340,7 +344,7 @@ baseline_bias = f'''
         | Labeled High Risk, Didn’t Re-Offend | {baseline_p[0]}%   | {baseline_p[2]}%  |
         | Labeled Low Risk, Yet Did Re-Offend | {baseline_p[1]}%   | {baseline_p[3]}%  |
 '''
-baseline_bias_section = st.beta_expander("Baseline Model, Bias Evaluation", False)
+baseline_bias_section = st.beta_expander("Baseline Model, Bias Evaluation Table", False)
 baseline_bias_section.markdown(baseline_bias)
 
 # write interpretation
@@ -382,7 +386,7 @@ model_bias = f'''
         | Labeled High Risk, Didn’t Re-Offend | {model_p[0]}%      | {model_p[2]}%     |
         | Labeled Low Risk, Yet Did Re-Offend | {model_p[1]}%      | {model_p[3]}%     |
 '''
-model_bias_section = st.beta_expander(f"{model_name} Model, Bias Evaluation", False)
+model_bias_section = st.beta_expander(f"{model_name} Model, Bias Evaluation Table", False)
 model_bias_section.markdown(model_bias)
 
 # write interpretation
@@ -429,9 +433,6 @@ model_interpretation4 = f'''
         They are {round(model_p[1]/model_p[3],1)} times 
         more likely than blacks to be labeled lower risk but go on to commit other crimes.'''
 
-# st.markdown(model_interpretation1+model_interpretation11)
-# st.markdown(model_interpretation3+model_interpretation4)
-# st.markdown(model_interpretation2)
 model_interpretation_section = st.beta_expander(f"{model_name} Model, Interpretation", False)
 model_interpretation_section.markdown(model_interpretation1+model_interpretation11)
 model_interpretation_section.markdown(model_interpretation3+model_interpretation4)
