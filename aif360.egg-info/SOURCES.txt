@@ -1,0 +1,8 @@
+README.md
+setup.py
+aif360.egg-info/PKG-INFO
+aif360.egg-info/SOURCES.txt
+aif360.egg-info/dependency_links.txt
+aif360.egg-info/not-zip-safe
+aif360.egg-info/requires.txt
+aif360.egg-info/top_level.txt

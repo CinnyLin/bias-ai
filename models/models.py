@@ -1,3 +1,25 @@
+# Load all necessary packages
+%matplotlib inline
+import sys
+sys.path.append("../")
+import numpy as np
+from tqdm import tqdm
+
+from aif360.metrics import BinaryLabelDatasetMetric
+from aif360.algorithms.preprocessing import Reweighing
+from aif360.datasets import StandardDataset
+from IPython.display import Markdown, display
+from aif360.metrics import ClassificationMetric
+from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import accuracy_score
+
+from IPython.display import Markdown, display
+import matplotlib.pyplot as plt
+
+# from common_utils import compute_metrics
+from aif360.algorithms.preprocessing.optim_preproc_helpers.data_preproc_functions\
+        import load_preproc_data_adult, load_preproc_data_german, load_preproc_data_compas
 import pandas as pd
 from sklearn.linear_model import LogisticRegression 
 from sklearn.linear_model import SGDClassifier
@@ -11,6 +33,8 @@ from sklearn.svm import SVC
 from sklearn import tree
 from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import GridSearchCV
+
+def RW_logit(X,y):
 
 def logit(X, y):
     lr = LogisticRegression()
