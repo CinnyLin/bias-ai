@@ -102,9 +102,9 @@ convert_cat = '''
                 Because `sex` and `race` are categorical variables,
                 when most of our models can only take in numerical values,
                 so we have one-hot-encoded them to binary variables: 
-                - In `sex`, "Male" is encoded as `1`, and "Female" as `0`
-                - In `race`, "African American" is encoded as `2`,
-                "Caucasian" is encoded as `1`, and other races are encoded as `0`
+                - In `sex_num`, "Male" is encoded as `1`, and "Female" as `0`
+                - Race has multiple categories, and we only one-hot-encoded the two races 
+                which are the focus of our project, `African_American` and `Caucasian`
                 '''
 convert_cat_section = st.beta_expander("Converting Categorical Variables", False)
 convert_cat_section.markdown(convert_cat)
@@ -125,8 +125,12 @@ num_cols = df.dtypes[df.dtypes!=object].keys()
 y_index = list(num_cols).index('recidivism_within_2_years')
 y_col = st.selectbox(label='Target variable (y)', options=['recidivism_within_2_years'], 
                      help='The predicting variable is the ground truth value of whether the person actually reoffended 2 years later.')
-X_cols = st.multiselect(label='Training variables (X)', options=list(num_cols.drop([y_col, 'id', 'COMPASS_determination'])),
-                        default=['sex_num', 'age', 'race_num', 'priors_count', 'juv_fel_count', 'juv_misd_count', 'juv_other_count'],
+
+#['sex_num', 'age', 'African_American', 'Caucasian',
+# 'priors_count', 'juv_fel_count', 'juv_misd_count', 'juv_other_count', ']
+default_input_features = list(num_cols.drop([y_col, 'id', 'COMPASS_determination']))
+X_cols = st.multiselect(label='Training variables (X)', options=default_input_features,
+                        default=default_input_features,
                         help='Only numerical columns are visible as options.')
 
 # get data
@@ -186,9 +190,17 @@ model_options = ['Logistic Regression', 'Decision Trees', 'Random Forest',
                  'Naïve Bayes', 'Stochastic Gradient Descent',
                  'Support Vector Machine', 'K Nearest Neighbors']
                 #  'Artificial Neural Network']
-df = run_models(model_options, df, X, y)
-df.to_csv('data/pred_output.csv', index=False)
-# df = pd.read_csv('data/pred_output.csv')
+# df = run_models(model_options, df, X, y)
+
+# naively dropping race variable
+if ('African_American' not in X_cols) or ('Caucasian' not in X_cols):
+        # df.to_csv('data/pred_output_drop_race.csv', index=False)
+        df = pd.read_csv('data/pred_output_drop_race.csv')
+else:
+        # all input features
+        # df.to_csv('data/pred_output.csv', index=False)
+        df = pd.read_csv('data/pred_output.csv')
+df_drop_race = pd.read_csv('data/pred_output_drop_race.csv')
 
 
 # st.markdown('### Metrics and Interpretation')
