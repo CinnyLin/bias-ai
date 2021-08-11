@@ -471,6 +471,46 @@ for model_name in model_names:
 heatmap_fig = utils.plot_heatmap(model_names, models_p)
 model_heatmap_section.pyplot(heatmap_fig)
 
+st.markdown('## Reducing Bias')
+
+naive_reduce_bias_section = st.beta_expander('Dropping the "race" variable', False)
+
+naive_reduce_bias_text = '''
+        First, we tried the naive method of simply dropping the race_num variables,
+        namely `African_American` and `Caucasian` columns from the models input features.
+        The result is shown in the heatmap below, which calculates the difference of the bias tables 
+        between keeping and dropping the race variables as an input feature.
+        
+        A possible reason why simply dropping the race variable did not reduce racial bias in the model is because
+        the other input features in the model are also correlated with the race variable. In other words, even though
+        we dropped the race variable itself, the other input variables that are correlated with the race variable can
+        still contribute to creating racial bias for the prediction results.
+        
+        For example, `age` is a variable that highly negatively correlates with `African_American` 
+        (as seen in the correlation matrix plot shown in the "Input Varaibles" section). 
+        
+        One might think, why not remove all the variables related to race then? One simple answer to this proposal
+        is that many variables are correlated with the race variable.
+        Also, given the constraint of the data, there are not many input features to start with,
+        and dropping more features could really limit the training.
+        '''
+naive_reduce_bias_section.markdown(naive_reduce_bias_text)
+
+models_p_drop_race = list()
+model_p_drop_race = metrics.propublica_analysis(df_drop_race)
+model_p_drop_race_arr = np.array([[model_p_drop_race[0], model_p_drop_race[2]], [model_p_drop_race[1], model_p_drop_race[3]]])
+models_p_drop_race.append(model_p_drop_race_arr)
+# get model probs
+for model_name in model_names:
+        model_p_drop_race = metrics.propublica_analysis(df_drop_race, pred_label=model_name)
+        model_p_drop_race_arr = np.array([[model_p_drop_race[0], model_p_drop_race[2]], [model_p_drop_race[1], model_p_drop_race[3]]])
+        models_p_drop_race.append(model_p_drop_race_arr)
+
+models_p_diff = np.subtract(models_p, models_p_drop_race)
+
+heatmap_fig_drop_race = utils.plot_heatmap(model_names, models_p_diff)
+naive_reduce_bias_section.pyplot(heatmap_fig_drop_race)
+
 
 st.markdown('## References')
 references = '''
