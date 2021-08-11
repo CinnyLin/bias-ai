@@ -249,10 +249,73 @@ bias_interpret2 = '''
         In our project, we would use similar methods of analysis 
         and assess bias in our models by interpreting tables like the one shown above.
         '''
-bias_interpret_section = st.beta_expander("Bias Evaluation: Following Propublica's Assessment", False)
-bias_interpret_section.markdown(bias_interpret1)
-bias_interpret_section.image('bias_table.png')
-bias_interpret_section.write(bias_interpret2)
+# bias_interpret_section = st.beta_expander("Bias Evaluation: Following Propublica's Assessment", False)
+# bias_interpret_section.markdown(bias_interpret1)
+# bias_interpret_section.image('bias_table.png')
+# bias_interpret_section.write(bias_interpret2)
+
+bias_interpret = '''
+        There is currently no universal metric to detect or assess biases in a model. 
+        
+        ProPublica has found that the COMPAS tool was biased for being twice as likely to falsely predict
+        African Americans as high risk when in fact they did not re-offend two years later.
+        
+        However, Northpointe, the company that developed the COMPAS tool, said that for any given score
+        on COMPAS' 10-point scale, white and black defendants were just as likely to be predicted as would re-offend.
+        
+        Both claims are correct in their own terms, because they have adopted different bias assessment metrics.
+        ProPublica calculated the "false positive rate", while Northpointe adopted the "calibration" method.
+        
+        It is also worth noting that the data that NorthPointe trained on, 
+        which our project would also be training with, may embed biases.
+        The likelihood of recidivism in the training data was possibly the outcome of a biased justice system.
+        That would be considered label bias.
+        This project focuses on model biases, assuming that we are discussing data with correct labels.
+        '''
+bias_interpret_section = st.beta_expander("Bias Evaluation: Discussion on Model Bias and Data Bias", False)
+bias_interpret_section.markdown(bias_interpret)
+
+bias_metrics = '''
+        Notions of fairness varies and are oftentimes conflicting. 
+        The following are a few ways we used in our project to compare how models performed:
+        
+        1. **Demographic Parity**: proportion of positive decision should be the same across all groups.
+        
+        _For our project, this metric means that the rate of 
+        labeling a defendant as high risk should be equal across
+        black and white defendants. However, this metric could cause 
+        problems when the true underlying distribution 
+        of risk labels differ across groups. Attempts to adjust for 
+        these differences often require misclassifying
+        low-risk members of one group as high-risk and vice versa, 
+        potentially harming members of all groups in the process._
+        
+        
+        2. **Equal Opportunity**: "true negative rate" (TNR) or "true positive rate" (TPR)
+        should be equal for all groups, focusing on the advantaged outcome.
+        
+        _Our project is a negative classification problem, 
+        thus focusing on looking into true negative rates. 
+        For our project, this metric means that the model 
+        would correctly classify defendants who do not re-offend
+        as low risk at equal rates for both black and white defendants._
+        
+        3. **Equalized Odds**: "false negative rate" (FNR) and "true negative rate" (TNR) 
+        should be equal across groups, focusing on the advantaged outcome.
+        
+        _Our project is a negative classification problem, 
+        thus focusing on looking into true and false negative rates.
+        Note that equalized odds is usually only possible by 
+        introducing randomness in the decision-making procedure._
+        
+        4. **Calibration**: model's predicted probability should be correct across all groups.
+         
+        _For our project, this metric means that among 
+        the defendants of a given risk score, 
+        the proportion that would re-offend is the same for both groups._        
+        '''
+bias_metrics_section = st.beta_expander("Bias Evaluation: Fairness Metrics", False)
+bias_metrics_section.markdown(bias_metrics)
 
 
 st.markdown('### Baseline Model: COMPAS')
@@ -408,6 +471,14 @@ for model_name in model_names:
 heatmap_fig = utils.plot_heatmap(model_names, models_p)
 model_heatmap_section.pyplot(heatmap_fig)
 
+
+st.markdown('## References')
+references = '''
+        1. Corbett-Davies & Goel's "The Measure and Mismeasure of Fairness" 
+        
+        2. Hardt, Price, and Srebro's "Equality of Opportunity in Supervised Learning"
+        '''
+st.markdown(references)
 
 # st.markdown('---')
 # st.markdown('## Distribution of Work')
