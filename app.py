@@ -441,7 +441,9 @@ model_interpretation_section.markdown(model_interpretation2)
 # (5) bias: scatter plot
 if model_name == 'Logistic Regression':
         model_scatter_section = st.beta_expander(f"{model_name} Model, Scatter Plot", False)
-        scatter_fig = utils.plot_scatter(df)
+        threshold_slider = model_scatter_section.slider("Risk Probability Threshold:", 
+                                                 min_value=0.0, max_value=1.0, value=0.5, step=0.01)
+        scatter_fig = utils.plot_scatter(df, threshold=threshold_slider)
         model_scatter_section.pyplot(scatter_fig)
 
 
