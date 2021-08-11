@@ -472,13 +472,18 @@ models_p = list()
 model_p = metrics.propublica_analysis(df)
 model_p_arr = np.array([[model_p[0], model_p[2]], [model_p[1], model_p[3]]])
 models_p.append(model_p_arr)
+
+vals = list()
+vals.extend(model_p)
+
 # get model probs
 for model_name in model_options:
         model_p = metrics.propublica_analysis(df, pred_label=model_name)
         model_p_arr = np.array([[model_p[0], model_p[2]], [model_p[1], model_p[3]]])
         models_p.append(model_p_arr)
+        vals.extend(model_p)
 
-heatmap_fig = utils.plot_heatmap(model_options, models_p)
+heatmap_fig = utils.plot_heatmap(model_options, models_p, vals)
 model_heatmap_section.pyplot(heatmap_fig)
 
 st.markdown('## Reducing Bias')
@@ -510,15 +515,21 @@ models_p_drop_race = list()
 model_p_drop_race = metrics.propublica_analysis(df_drop_race)
 model_p_drop_race_arr = np.array([[model_p_drop_race[0], model_p_drop_race[2]], [model_p_drop_race[1], model_p_drop_race[3]]])
 models_p_drop_race.append(model_p_drop_race_arr)
+
+vals_drop_race = list()
+vals_drop_race.extend(model_p_drop_race)
+
 # get model probs
 for model_name in model_options:
         model_p_drop_race = metrics.propublica_analysis(df_drop_race, pred_label=model_name)
         model_p_drop_race_arr = np.array([[model_p_drop_race[0], model_p_drop_race[2]], [model_p_drop_race[1], model_p_drop_race[3]]])
         models_p_drop_race.append(model_p_drop_race_arr)
+        vals_drop_race.extend(model_p_drop_race)
 
 models_p_diff = np.subtract(models_p, models_p_drop_race)
+vals_diff = np.subtract(vals, vals_drop_race)
 
-heatmap_fig_drop_race = utils.plot_heatmap(model_options, models_p_diff)
+heatmap_fig_drop_race = utils.plot_heatmap(model_options, models_p_diff, vals_diff)
 naive_reduce_bias_section.pyplot(heatmap_fig_drop_race)
 
 

@@ -127,9 +127,14 @@ def plot_scatter(df, y='Logistic Regression Prob', threshold=0.5):
     return fig
 
 
-def plot_heatmap(model_names, data, 
+def plot_heatmap(model_names, data, vals,
                  row_labels=["False Positive", "False Negative"], col_labels=["White", "Black"]):
+            
+    ## get min/max
+    data_min = min(vals)
+    data_max = max(vals)
     
+    # plot
     fig, ax = plt.subplots(nrows=2, ncols=4,  sharex=True, sharey=True, figsize=(10, 10))
     plt.subplots_adjust(top=4.5, bottom=3, right=6, left=3.5, wspace=0.05, hspace=0.05)
     
@@ -137,7 +142,8 @@ def plot_heatmap(model_names, data,
     
     for i in range(8):
         ax = plt.subplot(2, 4, i+1)
-        im = ax.imshow(data[i], cmap="YlOrRd")
+        im = ax.imshow(data[i], cmap="YlOrRd",
+                       vmin=data_min, vmax=data_max)
 
         annotate_heatmap(im, valfmt="{x:.0f}%", size=fontsize)
 
