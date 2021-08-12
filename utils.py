@@ -145,7 +145,7 @@ def plot_heatmap(model_names, data, vals,
         im = ax.imshow(data[i], cmap="YlOrRd",
                        vmin=data_min, vmax=data_max)
 
-        annotate_heatmap(im, valfmt="{x:.0f}%", size=fontsize)
+        annotate_heatmap(im, valfmt="{x:.0f}%", size=40)
 
         ax.set_xticks(np.arange(data[i].shape[1]))
         ax.set_yticks(np.arange(data[i].shape[0]))
