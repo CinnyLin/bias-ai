@@ -1,4 +1,5 @@
 # modules for app
+from sklearn import preprocessing
 import streamlit as st
 from st_footer import footer
 
@@ -8,7 +9,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # custom modules
-from models import metrics, models
+from models import metrics, models, debias_model
 import utils
 
 title = 'Bias AI' #'Bias in Recidivism Prediction'
@@ -263,7 +264,7 @@ bias_interpret2 = '''
         In our project, we would use similar methods of analysis 
         and assess bias in our models by interpreting tables like the one shown above.
         '''
-bias_interpret_section = st.beta_expander("Bias Evaluation: Following Propublica's Assessment", False)
+bias_interpret_section = st.beta_expander("Bias Evaluation: Bias Evaluation Table (Following Propublica's Assessment)", False)
 bias_interpret_section.markdown(bias_interpret1)
 bias_interpret_section.image('bias_table.png')
 bias_interpret_section.write(bias_interpret2)
@@ -338,24 +339,47 @@ st.markdown('### Baseline Model: COMPAS')
 baseline_accuracy = metrics.get_accuracy(df)
 baseline_precision = metrics.get_precision(df)
 baseline_recall = metrics.get_recall(df)
-baseline_eval = f'''
-            - **Baseline accuracy** = {baseline_accuracy:.5f}
-            - **Baseline precision** = {baseline_precision:.5f}
-            - **Baseline recall** = {baseline_recall:.5f}
+baseline_model_eval = f'''
+        - **Baseline accuracy** = {baseline_accuracy:.5f}
+        - **Baseline precision** = {baseline_precision:.5f}
+        - **Baseline recall** = {baseline_recall:.5f}
             '''
-baseline_eval_section = st.beta_expander("Baseline Model, Model Evaluation", False)
-baseline_eval_section.markdown(baseline_eval)
+# baseline_model_eval_section = st.beta_expander("Baseline Model, Model Evaluation", False)
+# baseline_model_eval_section.markdown(baseline_model_eval)
 
 # st.markdown('#### Bias Evaluation')
 baseline_p = metrics.propublica_analysis(df)
-baseline_bias = f'''
+baseline_bias_table = f'''
         |COMPASS                              | White              | Black             |
         |-------------------------------------|--------------------|-------------------|
         | Labeled High Risk, Didn’t Re-Offend | {baseline_p[0]}%   | {baseline_p[2]}%  |
         | Labeled Low Risk, Yet Did Re-Offend | {baseline_p[1]}%   | {baseline_p[3]}%  |
 '''
-baseline_bias_section = st.beta_expander("Baseline Model, Bias Evaluation Table", False)
-baseline_bias_section.markdown(baseline_bias)
+# baseline_bias_section = st.beta_expander("Baseline Model, Bias Evaluation Table", False)
+# baseline_bias_section.markdown(baseline_bias_table)
+
+bsl_dp, bsl_eop, bsl_eod, bsl_ca = metrics.fairness_metrics(df)
+baseline_fairness = f'''
+        - **Baseline demographic parity** = {bsl_dp:.5f}
+        - **Baseline equal opportunity** = {bsl_eop:.5f}
+        - **Baseline equalized odds** = {bsl_eod:.5f}
+        - **Baseline calibration** = {bsl_ca:.5f}
+                '''
+# baseline_fairness_section = st.beta_expander(f"Baseline Model, Fairness Metrics", False)
+# baseline_fairness_section.markdown(baseline_fairness)
+
+baseline_eval_section = st.beta_expander("Baseline Model, Model & Bias Evaluation Metrics", False)
+baseline_eval_text = f'''
+        ### Model Evaluation Metrics
+        {baseline_model_eval}
+        
+        ### Bias Evaluation Table
+        {baseline_bias_table}
+        
+        ### Fairness Metrics
+        {baseline_fairness}
+        '''
+baseline_eval_section.markdown(baseline_eval_text)
 
 # write interpretation
 # st.markdown('#### Interpretation')
@@ -369,7 +393,7 @@ baseline_interpretation = f'''
         more likely than blacks to be labeled lower risk but go on to commit other crimes.
 '''
 # st.markdown(baseline_interpretation)
-baseline_interpretation_section = st.beta_expander("Baseline Model, Interpretation", False)
+baseline_interpretation_section = st.beta_expander("Baseline Model, Metrics Interpretation", False)
 baseline_interpretation_section.markdown(baseline_interpretation)
 
 
@@ -385,19 +409,43 @@ model_eval = f'''
             - **{model_name} precision** = {model_precision:.5f}
             - **{model_name} recall** = {model_recall:.5f}
             '''
-model_eval_section = st.beta_expander(f"{model_name} Model, Model Evaluation", False)
-model_eval_section.markdown(model_eval)
+# model_eval_section = st.beta_expander(f"{model_name} Model, Model Evaluation", False)
+# model_eval_section.markdown(model_eval)
 
 # st.markdown('#### Bias Evaluation')
 model_p = metrics.propublica_analysis(df, pred_label=model_name)
-model_bias = f'''
+model_bias_table = f'''
         |{model_name}                         | White              | Black             |
         |-------------------------------------|--------------------|-------------------|
         | Labeled High Risk, Didn’t Re-Offend | {model_p[0]}%      | {model_p[2]}%     |
         | Labeled Low Risk, Yet Did Re-Offend | {model_p[1]}%      | {model_p[3]}%     |
 '''
-model_bias_section = st.beta_expander(f"{model_name} Model, Bias Evaluation Table", False)
-model_bias_section.markdown(model_bias)
+# model_bias_section = st.beta_expander(f"{model_name} Model, Bias Evaluation Table", False)
+# model_bias_section.markdown(model_bias_table)
+
+mdl_dp, mdl_eop, mdl_eod, mdl_ca = metrics.fairness_metrics(df, pred_label=model_name)
+model_fairness = f'''
+            - **{model_name} demographic parity** = {mdl_dp:.5f}
+            - **{model_name} equal opportunity** = {mdl_eop:.5f}
+            - **{model_name} equalized odds** = {mdl_eod:.5f}
+            - **{model_name} calibration** = {mdl_ca:.5f}
+            '''
+# model_fairness_section = st.beta_expander(f"{model_name} Model, Fairness Metrics", False)
+# model_fairness_section.markdown(model_fairness)
+
+model_eval_section = st.beta_expander(f"{model_name} Model, Model & Bias Evaluation Metrics", False)
+model_eval_text = f'''
+        ### Model Evaluation Metrics
+        {model_eval}
+        
+        ### Bias Evaluation Table
+        {model_bias_table}
+        
+        ### Fairness Metrics
+        {model_fairness}
+        '''
+model_eval_section.markdown(model_eval_text)
+
 
 # write interpretation
 # st.markdown('#### Interpretation')
@@ -417,19 +465,19 @@ if model_accuracy < baseline_accuracy:
 # (2) precision & recall
 if model_precision > baseline_precision:
         model_interpretation2 = f'''
-                We also see that our {model_name} model has higher precision and lower recall, 
-                meaning that our model was more conservative in our prediction, 
-                and only predicted someone as likely to reoffend when we are very sure; 
-                while the COMPAS model would predict someone as potential risk
-                as long as there is the possibility that the person could reoffend.
+        We also see that our {model_name} model has higher precision and lower recall, 
+        meaning that our model was more conservative in our prediction, 
+        and only predicted someone as likely to reoffend when we are very sure; 
+        while the COMPAS model would predict someone as potential risk
+        as long as there is the possibility that the person could reoffend.
                 '''
 if model_precision < baseline_precision:
         model_interpretation2 = f'''
-                We also see that our {model_name} model has lower precision and higher recall, 
-                meaning that our model would predict someone as potential risk
-                as long as there is the possibility that the person could reoffend;
-                while the COMPAS model was more conservative in its prediction, 
-                and only predicted someone as likely to reoffend when it was very sure.
+        We also see that our {model_name} model has lower precision and higher recall, 
+        meaning that our model would predict someone as potential risk
+        as long as there is the possibility that the person could reoffend;
+        while the COMPAS model was more conservative in its prediction, 
+        and only predicted someone as likely to reoffend when it was very sure.
                 '''
 
 # (3) bias: false positive
@@ -443,12 +491,36 @@ model_interpretation4 = f'''
         They are {round(model_p[1]/model_p[3],1)} times 
         more likely than blacks to be labeled lower risk but go on to commit other crimes.'''
 
-model_interpretation_section = st.beta_expander(f"{model_name} Model, Interpretation", False)
-model_interpretation_section.markdown(model_interpretation1+model_interpretation11)
-model_interpretation_section.markdown(model_interpretation3+model_interpretation4)
-model_interpretation_section.markdown(model_interpretation2)
+# (5) bias: fairness metrics
+model_interpretation5 = f'''
+        Comparing the four fairness metrics, {model_name} is 
+        {'higher' if bsl_dp>mdl_dp else 'lower'} in demographic parity,
+        {'higher' if bsl_eop>mdl_eop else 'lower'} in equal opportunity,
+        {'higher' if bsl_eod>mdl_eod else 'lower'} in equalized odds, and
+        {'higher' if bsl_ca>mdl_ca else 'lower'} in calibration.
+                '''
 
-# (5) bias: scatter plot
+
+model_interpretation_section = st.beta_expander(f"{model_name} Model, Metrics Interpretation & Baseline Comparison", False)
+model_interpretation_text = f'''
+        ### Model Evaluation
+        
+        {model_interpretation1+model_interpretation11}
+        
+        {model_interpretation2}
+        
+        ### Bias Evaluation
+        
+        {model_interpretation3+model_interpretation4}
+        
+        {model_interpretation5}
+                '''
+model_interpretation_section.markdown(model_interpretation_text)
+# model_interpretation_section.markdown(model_interpretation1+model_interpretation11)
+# model_interpretation_section.markdown(model_interpretation2)
+# model_interpretation_section.markdown(model_interpretation3+model_interpretation4)
+
+# (6) bias: scatter plot
 if model_name == 'Logistic Regression':
         model_scatter_section = st.beta_expander(f"{model_name} Model, Scatter Plot", False)
         model_scatter_text = '''
@@ -498,14 +570,16 @@ if model_name == 'Logistic Regression':
                                                  min_value=0.0, max_value=1.0, value=0.5, step=0.01)
         scatter_fig = utils.plot_scatter(df, threshold=threshold_slider)
         model_scatter_section.pyplot(scatter_fig)
+        model_scatter_section.markdown('''
+                The scatter plot is inspired by 
+                [Google's What-If-Tool](https://pair-code.github.io/what-if-tool/demos/compas.html).
+                ''')
 
 
 # st.markdown('---')
 
 st.markdown('## Compare Model Results')
-st.markdown('''
-        Compare baseline COMPAS model with all the machine learning models we tried out.
-        ''')
+# st.markdown('Compare baseline COMPAS model with all the machine learning models we tried out.')
 
 # model_names = st.multiselect("Choose models to compare", options=model_options, default=model_options)
 
@@ -514,7 +588,7 @@ plot_precision = model_line_section.checkbox('Also compare precision results?', 
 model_line_fig = utils.plot_line_model(df, model_options, precision=plot_precision)
 model_line_section.pyplot(model_line_fig)
 
-fairness_line_section = st.beta_expander("All Models, Bias Evaluation Metrics, Line Plot", False)
+fairness_line_section = st.beta_expander("All Models, Fairness Metrics, Line Plot", False)
 plot_dp = fairness_line_section.checkbox('Compare demographic parity?', value=False)
 plot_eop = fairness_line_section.checkbox('Compare equal opportunity?', value=True)
 plot_eod = fairness_line_section.checkbox('Compare equalized odds?', value=False)
@@ -546,7 +620,26 @@ model_heatmap_section.pyplot(heatmap_fig)
 
 st.markdown('## Reducing Bias')
 
-naive_reduce_bias_section = st.beta_expander('Dropping the "race" variable', False)
+reduce_bias_text = '''
+        In short, simply dropping the race varaible would not reduce racial bias
+        in the prediction because there are other variables in the data that are
+        highly correlated with race variable still.
+        There is a variety of algorithms to mitigate bias.
+        
+        The choice of algorithms to use can be divided based on which 
+        stage of the prediction process you want to work on:
+        
+        1. **pre-process**: fix the **data** 
+        2. **in-process**: fix the **classifier**
+        3. **post-process**: fix the **predictions**
+        
+        We used the algorithms provided by IBM's AIF360 
+        to run the three processes mentioned above.
+        '''
+reduce_bias_section = st.beta_expander('Methods to Reducing Bias', False)
+reduce_bias_section.markdown(reduce_bias_text)
+
+naive_reduce_bias_section = st.beta_expander('Naive Approach: Dropping the "race" variable', False)
 
 naive_reduce_bias_text = '''
         First, we tried the naive method of simply dropping the race_num variables,
@@ -569,6 +662,7 @@ naive_reduce_bias_text = '''
         '''
 naive_reduce_bias_section.markdown(naive_reduce_bias_text)
 
+# get baseline probs
 models_p_drop_race = list()
 model_p_drop_race = metrics.propublica_analysis(df_drop_race)
 model_p_drop_race_arr = np.array([[model_p_drop_race[0], model_p_drop_race[2]], [model_p_drop_race[1], model_p_drop_race[3]]])
@@ -590,17 +684,28 @@ vals_diff = np.subtract(vals, vals_drop_race)
 heatmap_fig_drop_race = utils.plot_heatmap(model_options, models_p_diff, vals_diff)
 naive_reduce_bias_section.pyplot(heatmap_fig_drop_race)
 
+
 st.markdown('## Conclusion')
 conclusion = '''
         xxx
         '''
 st.markdown(conclusion)
 
+st.markdown('## Further Work')
+further_work = '''
+        xxx
+        '''
+st.markdown(further_work)
+
 st.markdown('## References')
 references = '''
         1. Corbett-Davies & Goel's "The Measure and Mismeasure of Fairness" 
         
         2. Hardt, Price, and Srebro's "Equality of Opportunity in Supervised Learning"
+        
+        3. Google's What-If-Tool [COMPAS demo](https://pair-code.github.io/what-if-tool/demos/compas.html)
+        
+        4. IBM's AI Fairness 360 [COMPAS demo](https://aif360.mybluemix.net/check) 
         '''
 st.markdown(references)
 
