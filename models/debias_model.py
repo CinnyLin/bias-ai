@@ -1,31 +1,18 @@
-# Load all necessary packages
-# %matplotlib inline
-# Load all necessary packages
 import sys
 sys.path.append("../")
-import numpy as np
-from tqdm import tqdm
 from sklearn.metrics import accuracy_score
-from aif360.metrics import BinaryLabelDatasetMetric
 from aif360.algorithms.preprocessing import Reweighing
 from aif360.datasets import StandardDataset
-from IPython.display import Markdown, display
-from aif360.metrics import ClassificationMetric
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import cross_val_predict
-from IPython.display import Markdown, display
-import matplotlib.pyplot as plt
 
 from aif360.algorithms.inprocessing.adversarial_debiasing import AdversarialDebiasing
 import tensorflow.compat.v1 as tf
 
 from aif360.algorithms.postprocessing.calibrated_eq_odds_postprocessing import CalibratedEqOddsPostprocessing
 
-# from common_utils import compute_metrics
-from aif360.algorithms.preprocessing.optim_preproc_helpers.data_preproc_functions\
-        import load_preproc_data_adult, load_preproc_data_german, load_preproc_data_compas
 
 #load data
 import pandas as pd
@@ -68,7 +55,7 @@ def preprocessing_Reweighing(df, X, y):
     y_pred = cross_val_predict(lmod, X_train, y_train, fit_params = {'sample_weight':w_train}, cv = 10)
 #     print(y_pred)
     return y_pred
-df = pd.read_csv('/Users/shenmengjie/Documents/GitHub/bias-ai/data/compas_florida.csv')
+df = pd.read_csv('data/compas_florida.csv')
 X= df[['sex_num', 'age', 'African_American', 'Caucasian','priors_count', 'juv_fel_count', 'juv_misd_count', 'juv_other_count']]
 y = df['recidivism_within_2_years']
 # y_pred = inprocessing_aversarial_debaising(df, X, y)
@@ -92,12 +79,9 @@ def inprocessing_aversarial_debaising(df, X, y):
     debiased_model = AdversarialDebiasing(privileged_groups = privileged_groups,unprivileged_groups = unprivileged_groups,scope_name='debiased_classifier',debias=True,sess=sess)
     debiased_model.fit(dataset_orig_train)
     y_pred = debiased_model.predict(dataset_orig_vt).labels.ravel()
+    
+    # data_orig_vt = dataset_orig_vt.convert_to_dataframe()
     return y_vt, y_pred
-    
-    
-
-
-
 
 
 def postprocessing_calibrated_eq_odd(df,X, y):

@@ -78,6 +78,24 @@ def plot_line_fairness(df, model_names,
     ax.legend()
     return fig
 
+def plot_line_process(df, model_accuracies, model_precisions, precision=False):
+    fig, ax = plt.subplots(figsize=(20,7))
+    
+    # get data
+    baseline_accuracy = metrics.get_accuracy(df)
+    baseline_precision = metrics.get_precision(df)
+    
+    model_names = ['Pre-processing', 'In-processing', 'Post-processing']
+    
+    plt.plot(model_names, model_accuracies, label='accuracy', color='#D64949')
+    plt.axhline(baseline_accuracy, alpha=0.8, linestyle='--', color='#FF5733', label='baseline accuracy')
+    
+    if precision==True:
+        plt.plot(model_names, model_precisions, label='precision', color='#2E4FBD')
+        plt.axhline(baseline_precision, alpha=0.8, linestyle='--', color='#6495ED', label='baseline precision')
+    
+    ax.legend()
+    return fig
 
 
 def plot_scatter(df, y='Logistic Regression Prob', threshold=0.5):

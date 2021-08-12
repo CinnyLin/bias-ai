@@ -405,10 +405,10 @@ model_accuracy = metrics.get_accuracy(df, pred_label=model_name)
 model_precision = metrics.get_precision(df, pred_label=model_name)
 model_recall = metrics.get_recall(df, pred_label=model_name)
 model_eval = f'''
-            - **{model_name} accuracy** = {model_accuracy:.5f}
-            - **{model_name} precision** = {model_precision:.5f}
-            - **{model_name} recall** = {model_recall:.5f}
-            '''
+        - **{model_name} accuracy** = {model_accuracy:.5f}
+        - **{model_name} precision** = {model_precision:.5f}
+        - **{model_name} recall** = {model_recall:.5f}
+                '''
 # model_eval_section = st.beta_expander(f"{model_name} Model, Model Evaluation", False)
 # model_eval_section.markdown(model_eval)
 
@@ -419,17 +419,17 @@ model_bias_table = f'''
         |-------------------------------------|--------------------|-------------------|
         | Labeled High Risk, Didn’t Re-Offend | {model_p[0]}%      | {model_p[2]}%     |
         | Labeled Low Risk, Yet Did Re-Offend | {model_p[1]}%      | {model_p[3]}%     |
-'''
+                '''
 # model_bias_section = st.beta_expander(f"{model_name} Model, Bias Evaluation Table", False)
 # model_bias_section.markdown(model_bias_table)
 
 mdl_dp, mdl_eop, mdl_eod, mdl_ca = metrics.fairness_metrics(df, pred_label=model_name)
 model_fairness = f'''
-            - **{model_name} demographic parity** = {mdl_dp:.5f}
-            - **{model_name} equal opportunity** = {mdl_eop:.5f}
-            - **{model_name} equalized odds** = {mdl_eod:.5f}
-            - **{model_name} calibration** = {mdl_ca:.5f}
-            '''
+        - **{model_name} demographic parity** = {mdl_dp:.5f}
+        - **{model_name} equal opportunity** = {mdl_eop:.5f}
+        - **{model_name} equalized odds** = {mdl_eod:.5f}
+        - **{model_name} calibration** = {mdl_ca:.5f}
+                '''
 # model_fairness_section = st.beta_expander(f"{model_name} Model, Fairness Metrics", False)
 # model_fairness_section.markdown(model_fairness)
 
@@ -684,18 +684,136 @@ vals_diff = np.subtract(vals, vals_drop_race)
 heatmap_fig_drop_race = utils.plot_heatmap(model_options, models_p_diff, vals_diff)
 naive_reduce_bias_section.pyplot(heatmap_fig_drop_race)
 
+# st.markdown('---')
 
-st.markdown('## Conclusion')
-conclusion = '''
-        xxx
-        '''
-st.markdown(conclusion)
+# (1) Pre-processing
+# model evaluation metrics
+model_name = 'Pre-processing'
+pre_y_pred = debias_model.preprocessing_Reweighing(df, X, y)
+df[f'{model_name}'] = pre_y_pred
+pre_accuracy = metrics.get_accuracy(df, pred_label=model_name)
+pre_precision = metrics.get_precision(df, pred_label=model_name)
+pre_recall = metrics.get_recall(df, pred_label=model_name)
+pre_eval = f'''
+        - **{model_name} accuracy** = {pre_accuracy:.5f}
+        - **{model_name} precision** = {pre_precision:.5f}
+        - **{model_name} recall** = {pre_recall:.5f}
+                '''
 
-st.markdown('## Further Work')
-further_work = '''
-        xxx
+# bias evaluation table
+pre_p = metrics.propublica_analysis(df, pred_label=model_name)
+pre_bias_table = f'''
+        |{model_name}                         | White              | Black             |
+        |-------------------------------------|--------------------|-------------------|
+        | Labeled High Risk, Didn’t Re-Offend | {pre_p[0]}%      | {pre_p[2]}%     |
+        | Labeled Low Risk, Yet Did Re-Offend | {pre_p[1]}%      | {pre_p[3]}%     |
+                '''
+
+# fairness metrics
+pre_dp, pre_eop, pre_eod, pre_ca = metrics.fairness_metrics(df, pred_label=model_name)
+pre_fairness = f'''
+        - **{model_name} demographic parity** = {pre_dp:.5f}
+        - **{model_name} equal opportunity** = {pre_eop:.5f}
+        - **{model_name} equalized odds** = {pre_eod:.5f}
+        - **{model_name} calibration** = {pre_ca:.5f}
+                '''
+
+preprocess_section = st.beta_expander('Pre-processing the Data', False)
+preprocess_text = f'''
+        ### Definition
+        The pre-processing algorithm we used is **"Re-weighing"**.
+        The algorithm weights the records in each (group, label) combination 
+        differently to ensure fairness in the data before classification.
+        
+        ### Model Evaluation Metrics
+        {pre_eval}
+        
+        ### Bias Evaluation Table
+        {pre_bias_table}
+        
+        ### Fairness Metrics
+        {pre_fairness}
         '''
-st.markdown(further_work)
+preprocess_section.markdown(preprocess_text)
+
+# (2) In-processing
+# model evaluation metrics
+model_name = 'In-processing'
+in_y_vt, in_y_pred = debias_model.inprocessing_aversarial_debaising(df, X, y)
+in_df = pd.DataFrame({'recidivism_within_2_years': in_y_vt, f'{model_name}': in_y_pred})
+in_accuracy = metrics.get_accuracy(in_df, pred_label=model_name)
+in_precision = metrics.get_precision(in_df, pred_label=model_name)
+in_recall = metrics.get_recall(in_df, pred_label=model_name)
+in_eval = f'''
+        - **{model_name} accuracy** = {in_accuracy:.5f}
+        - **{model_name} precision** = {in_precision:.5f}
+        - **{model_name} recall** = {in_recall:.5f}
+                '''
+
+
+inprocess_section = st.beta_expander('In-processing the Classifier', False)
+inprocess_text = f'''
+        ### Definition
+        The in-processing algorithm we used is **"Adversarial Debiasing"**.
+        The algorithm learns a classifier that maximizes prediction accuracy 
+        and simultaneously reduces an adversary's ability 
+        to determine the protected attribute from the predictions. 
+        This approach leads to a fair classifier, because the predictions 
+        cannot carry any group discrimination information that the adversary can exploit.
+        
+        ### Model Evaluation Metrics
+        {in_eval}
+        '''
+inprocess_section.markdown(inprocess_text)
+
+# (3) Post-processing
+# model evaluation metrics
+model_name = 'Post-processing'
+post_y_vt, post_y_pred = debias_model.postprocessing_calibrated_eq_odd(df, X, y)
+post_df = pd.DataFrame({'recidivism_within_2_years': post_y_vt, f'{model_name}': post_y_pred})
+post_accuracy = metrics.get_accuracy(post_df, pred_label=model_name)
+post_precision = metrics.get_precision(post_df, pred_label=model_name)
+post_recall = metrics.get_recall(post_df, pred_label=model_name)
+post_eval = f'''
+        - **{model_name} accuracy** = {post_accuracy:.5f}
+        - **{model_name} precision** = {post_precision:.5f}
+        - **{model_name} recall** = {post_recall:.5f}
+                '''
+
+postprocess_section = st.beta_expander('Post-processing the Predictions', False)
+postprocess_text = f'''
+        ### Definition
+        The pro-processing algorithm we used is **"Reject Option Based Classification"**.
+        The algorithm changes prediction results from a classifier to make them fairer. 
+        The algorithm provides favorable outcomes to unprivileged groups 
+        and unfavorable outcomes to privileged groups 
+        in a confidence interval around the decision boundary with the highest uncertainty.
+        
+        ### Model Evaluation Metrics
+        {post_eval}
+        
+        '''
+postprocess_section.markdown(postprocess_text)
+
+compare_process_section = st.beta_expander('Compare Processing Results', False)
+
+plot_precision = compare_process_section.checkbox('Also plot precision results?', value=False)
+process_accuracies = [pre_accuracy, in_accuracy, post_accuracy]
+process_precisions = [pre_precision, in_precision, post_precision]
+model_line_fig = utils.plot_line_process(df, process_accuracies, process_precisions, precision=plot_precision)
+compare_process_section.pyplot(model_line_fig)
+
+# st.markdown('## Conclusion')
+# conclusion = '''
+#         xxx
+#         '''
+# st.markdown(conclusion)
+
+# st.markdown('## Further Work')
+# further_work = '''
+#         xxx
+#         '''
+# st.markdown(further_work)
 
 st.markdown('## References')
 references = '''
