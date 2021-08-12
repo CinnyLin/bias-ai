@@ -5,7 +5,7 @@ import sys
 sys.path.append("../")
 import numpy as np
 from tqdm import tqdm
-
+from sklearn.metrics import accuracy_score
 from aif360.metrics import BinaryLabelDatasetMetric
 from aif360.algorithms.preprocessing import Reweighing
 from aif360.datasets import StandardDataset
@@ -33,18 +33,18 @@ import pandas as pd
 def load_data(df, X, y):
     dataset_orig = StandardDataset(df,label_name='recidivism_within_2_years', favorable_classes=[1], protected_attribute_names=['race'], privileged_classes = [['Caucasian']], features_to_keep=X.columns.tolist())
 
-#     dataset_orig_train, dataset_orig_test = dataset_orig.split([0.7], shuffle=True)
-#     privileged_groups = [{'race': 1}]
-#     unprivileged_groups = [{'race': 0}]
+    dataset_orig_train, dataset_orig_test = dataset_orig.split([0.7], shuffle=True)
+    privileged_groups = [{'race': 1}]
+    unprivileged_groups = [{'race': 0}]
 
-    # Get the dataset and split into train and test
-#     dataset_orig_train, dataset_orig_vt = dataset_orig.split([0.7], shuffle=True)
+    #Get the dataset and split into train and test
+    dataset_orig_train, dataset_orig_vt = dataset_orig.split([0.7], shuffle=True)
 #     dataset_orig_valid, dataset_orig_test = dataset_orig_vt.split([0.5], shuffle=True)
-    # return dataset_orig_train, dataset_orig_valid, dataset_orig_test
-    return dataset_orig
+    return dataset_orig_train, dataset_orig_vt
 
 def preprocessing_Reweighing(df, X, y):
-    data = load_data(df, X, y)
+
+    data = StandardDataset(df,label_name='recidivism_within_2_years', favorable_classes=[1], protected_attribute_names=['race'], privileged_classes = [['Caucasian']], features_to_keep=X.columns.tolist())
     # dataset_orig_train = data[0]
     # dataset_orig_valid = data[1]
     # dataset_orig_test = data[2]
@@ -68,22 +68,37 @@ def preprocessing_Reweighing(df, X, y):
     y_pred = cross_val_predict(lmod, X_train, y_train, fit_params = {'sample_weight':w_train}, cv = 10)
 #     print(y_pred)
     return y_pred
-# from sklearn.metrics import accuracy_score
-# df = pd.read_csv('/Users/shenmengjie/Documents/GitHub/bias-ai/data/compas_florida.csv')
-# X= df[['sex_num', 'age', 'African_American', 'Caucasian','priors_count', 'juv_fel_count', 'juv_misd_count', 'juv_other_count']]
-# y = df['recidivism_within_2_years']
-# y_pred = preprocessing_Reweighing(df, X,y)
-# print(accuracy_score(y, y_pred))
+df = pd.read_csv('/Users/shenmengjie/Documents/GitHub/bias-ai/data/compas_florida.csv')
+X= df[['sex_num', 'age', 'African_American', 'Caucasian','priors_count', 'juv_fel_count', 'juv_misd_count', 'juv_other_count']]
+y = df['recidivism_within_2_years']
+# y_pred = inprocessing_aversarial_debaising(df, X, y)
+# print(print(y_pred))
 
 def inprocessing_aversarial_debaising(df, X, y):
+    data = load_data(df, X, y)
+    tf.disable_eager_execution()
+    dataset_orig_train = data[0]
+    dataset_orig_vt = data[1]
+#     print(dataset_orig_vt)
+    scale_orig = StandardScaler()
+    X_train = scale_orig.fit_transform(dataset_orig_train.features)
+    y_train = dataset_orig_train.labels.ravel()    
+    X_vt = scale_orig.fit_transform(dataset_orig_vt.features)
+    y_vt = dataset_orig_vt.labels.ravel()    
+    privileged_groups = [{'race': 1}]
+    unprivileged_groups = [{'race': 0}]
     tf.reset_default_graph()
     sess = tf.Session()
-    debiased_model = AdversarialDebiasing(privileged_groups = privileged_groups,
-                                unprivileged_groups = unprivileged_groups,
-                                scope_name='debiased_classifier',
-                                debias=True,
-                                sess=sess)
+    debiased_model = AdversarialDebiasing(privileged_groups = privileged_groups,unprivileged_groups = unprivileged_groups,scope_name='debiased_classifier',debias=True,sess=sess)
     debiased_model.fit(dataset_orig_train)
+    y_pred = debiased_model.predict(dataset_orig_vt).labels.ravel()
+    return y_vt, y_pred
+    
+    
+# y_pred = inprocessing_aversarial_debaising(df, X, y)
+# print(y_pred)
+
+
 
 
 def postprocessing(df,X, y):
