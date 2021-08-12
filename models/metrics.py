@@ -71,7 +71,7 @@ def propublica_analysis(df, truth_label='recidivism_within_2_years', \
     source: https://www.propublica.org/article/machine-bias-risk-assessments-in-criminal-sentencing
     '''
     
-    # create filters
+    # create label filters
     tp, tn, fp, fn = get_filters(df, truth_label, pred_label)
     
     # create race filters
@@ -116,3 +116,73 @@ def propublica_analysis(df, truth_label='recidivism_within_2_years', \
         return int(round(p,2)*100)
     
     return [get_percent(p) for p in [p1, p2, p3, p4]]
+
+
+def fairness_metrics(df, truth_label='recidivism_within_2_years', \
+                    pred_label='COMPASS_determination'):
+    '''
+    Returns four fairness metrics:
+    1. demographic parity
+    2. equal opportunity
+    3. equalized odds
+    4. calibration
+    '''
+    # create label filters
+    tp, tn, fp, fn = get_filters(df, truth_label, pred_label)
+    
+    # create race filters
+    r1 = (df['race']=='Caucasian')
+    r2 = (df['race']=='African-American')
+    
+    # get lengths
+    # false
+    fp1 = len(df[fp&r1])
+    fn1 = len(df[fn&r1])
+    fp2 = len(df[fp&r2])
+    fn2 = len(df[fn&r2])
+    # true
+    tp1 = len(df[tp&r1])
+    tn1 = len(df[tn&r1])
+    tp2 = len(df[tp&r2])
+    tn2 = len(df[tn&r2])
+    # all
+    len1 = len(df[r1])
+    len2 = len(df[r1])
+    
+    '''
+    1. demographic parity:
+    proportion of positive decision should be the same across all groups.
+    '''
+    pos1 = (fp1+tp1)/len1
+    pos2 = (fp2+tp2)/len2
+    demographic_parity = pos1/pos2
+    
+    '''
+    2. equal opportunity:
+    "true negative rate" (TNR) should be equal for all groups
+    '''
+    tnr1 = tn1/len1
+    tnr2 = tn2/len2
+    equal_opportunity = tnr1/tnr2
+    
+    '''
+    3. equalized odds: 
+    "false negative rate" (FNR) and "true negative rate" (TNR) should be equal across groups
+    '''
+    fnr1 = fn1/len1
+    fnr2 = fn2/len2
+    equalized_odds = fnr1/fnr2
+    
+    '''
+    4. calibration
+    model's predicted probability should be "correct" across all groups
+    '''
+    correct_positive_rate1 = (tp1+fn1)/len1
+    correct_positive_rate2 = (tp2+fn2)/len2
+    predicted_positive_rate1 = (tp1+fp1)/len1
+    predicted_positive_rate2 = (tp2+fp2)/len2
+    calibration1 = predicted_positive_rate1/correct_positive_rate1
+    calibration2 = predicted_positive_rate2/correct_positive_rate2
+    calibration = calibration1/calibration2
+    
+    return demographic_parity, equal_opportunity, equalized_odds, calibration

@@ -15,7 +15,7 @@ title = 'Bias AI' #'Bias in Recidivism Prediction'
 favicon = 'https://cdn.iconscout.com/icon/premium/png-512-thumb/bias-2979240-2483226.png'
 st.set_page_config(page_title=title, page_icon = favicon, layout = 'wide', initial_sidebar_state = 'auto')
 
-st.markdown('# Analyzing Biases in Predicting Crime Recidivism in Broward, Florida')
+st.markdown('# Analyzing Racial Biases in Crime Recidivism Prediction in Broward, Florida')
 st.write('Dean\'s Undergraduate Research Project at NYU Shanghai, Summer 2021')
 
 # st.markdown('## Team')
@@ -56,15 +56,22 @@ significance_section.markdown(significance)
 
 # st.markdown('## Research Design and Feasibility')
 design = '''
-        Due to time constraint, we have narrowed down our project scope to look at a single US region,
+        Due to time constraint, we narrowed down our project scope to look at a single US region,
         and focus more on exploring the prediction accuracies of different machine learning models,
         as well as analyzing whether the prediciton results produced implicit racial biases.
         
-        We have decided to use the crime dataset from Broward County, Florida, 
+        We decided to use the crime dataset from Broward County, Florida, 
         and use the COMPAS commericial tool that the state has adopted as the baseline model.
         
-        First, we would compare how other machine learning model **"predicts better"** (using accuracy, precision, recall metrics)
-        and **"creates less biases"** (based on the table percentage from Propublica's article) than COMPAS.
+        This project deals with a _negative binary classification_ problem.
+        It is "binary" in the sense that the two predicted categories are whether they "would" or "would not" re-offend.
+        Thus, it is "negative" because "would not re-offend" is the advantaged outcome in the problem.
+        
+        First, we would compare how other machine learning model **"predicts better"** 
+        (using accuracy, precision, recall metrics)
+        and **"creates less biases"** 
+        (based on the table from Propublica's article and four other fairness metrics) 
+        than COMPAS.
         
         Second, we would look closer at the errors, look at where COMPAS predicts wrong and our model doesn't, 
         or when both do, and see the characteristics of these people.
@@ -72,10 +79,13 @@ design = '''
         Once we identified 1-2 best models out of the 5-10 we plan to try out, 
         we can try feeding in different input variables and see how that improves the prediction.
         
-        Eventually, the goal of our research project is to look to the future and give suggestions to policy changes.
+        Eventually, the goal of our research project is to 
+        look to the future and give suggestions to policy changes.
         With the model and input variables we found, we are able to say, for example, 
-        that race is actually not a variable that is necessary in predicting recidivism better. 
-        We could say that COMPAS is not particularly useful and this is another model we propose.
+        that race is actually not a variable that is necessary 
+        in predicting recidivism better. 
+        We also hope to say that COMPAS is not particularly useful 
+        and this is another model we propose.
         '''
 design_section = st.beta_expander("Research Design and Feasibility", False)
 design_section.markdown(design)
@@ -86,10 +96,10 @@ design_section.markdown(design)
 
 st.markdown('## Data')
 data = '''
-        We have decided to use the 
+        We used the 
         [crime dataset](https://www.kaggle.com/danofer/compass) 
         from Broward County, Florida, 
-        and use the COMPAS commericial tool that the state has adopted as the baseline model.
+        and used the COMPAS commericial tool that the state has adopted as the baseline model.
         '''
 st.markdown(data)
 
@@ -101,10 +111,10 @@ st.write('Data Size:', df.shape)
 convert_cat = '''
                 Because `sex` and `race` are categorical variables,
                 when most of our models can only take in numerical values,
-                so we have one-hot-encoded them to binary variables: 
-                - In `sex`, "Male" is encoded as `1`, and "Female" as `0`
-                - In `race`, "African American" is encoded as `2`,
-                "Caucasian" is encoded as `1`, and other races are encoded as `0`
+                so we one-hot-encoded them to binary variables: 
+                - In `sex_num`, "Male" is encoded as `1`, and "Female" as `0`
+                - Race has multiple categories, and we only one-hot-encoded the two races 
+                which are the focus of our project, `African_American` and `Caucasian`
                 '''
 convert_cat_section = st.beta_expander("Converting Categorical Variables", False)
 convert_cat_section.markdown(convert_cat)
@@ -125,8 +135,12 @@ num_cols = df.dtypes[df.dtypes!=object].keys()
 y_index = list(num_cols).index('recidivism_within_2_years')
 y_col = st.selectbox(label='Target variable (y)', options=['recidivism_within_2_years'], 
                      help='The predicting variable is the ground truth value of whether the person actually reoffended 2 years later.')
-X_cols = st.multiselect(label='Training variables (X)', options=list(num_cols.drop([y_col, 'id', 'COMPASS_determination'])),
-                        default=['sex_num', 'age', 'race_num', 'priors_count', 'juv_fel_count', 'juv_misd_count', 'juv_other_count'],
+
+#['sex_num', 'age', 'African_American', 'Caucasian',
+# 'priors_count', 'juv_fel_count', 'juv_misd_count', 'juv_other_count', ']
+default_input_features = list(num_cols.drop([y_col, 'id', 'COMPASS_determination']))
+X_cols = st.multiselect(label='Training variables (X)', options=default_input_features,
+                        default=default_input_features,
                         help='Only numerical columns are visible as options.')
 
 # get data
@@ -135,8 +149,12 @@ X = df[X_cols]
 
 # plot correlation matrix
 XY = df[X_cols+[y_col]]
-corr_fig = XY.corr().style.background_gradient(cmap='coolwarm')
 corr_matrix_section = st.beta_expander("Columns, Correlation Matrix Plot")
+axis = corr_matrix_section.radio("Comparison axis:", ["column-wise", "row-wise"])
+if axis=="column-wise":
+        corr_fig = XY.corr().style.background_gradient(cmap='coolwarm', axis=1)
+if axis=="row-wise":
+        corr_fig = XY.corr().style.background_gradient(cmap='coolwarm', axis=0)
 corr_matrix_section.dataframe(corr_fig)
 
 
@@ -144,8 +162,8 @@ st.markdown('## Models')
 
 # utils
 @st.cache(allow_output_mutation=True)
-def run_models(model_names, df, X, y):
-        for model_name in model_names:
+def run_models(model_options, df, X, y):
+        for model_name in model_options:
                 if model_name == 'Logistic Regression':
                         y_pred, y_pred_prob = models.logit(X, y)
                         df[model_name] =  y_pred
@@ -186,9 +204,17 @@ model_options = ['Logistic Regression', 'Decision Trees', 'Random Forest',
                  'Naïve Bayes', 'Stochastic Gradient Descent',
                  'Support Vector Machine', 'K Nearest Neighbors']
                 #  'Artificial Neural Network']
-df = run_models(model_options, df, X, y)
-df.to_csv('data/pred_output.csv', index=False)
-# df = pd.read_csv('data/pred_output.csv')
+# df = run_models(model_options, df, X, y)
+
+# naively dropping race variable
+if ('African_American' not in X_cols) or ('Caucasian' not in X_cols):
+        # df.to_csv('data/pred_output_drop_race.csv', index=False)
+        df = pd.read_csv('data/pred_output_drop_race.csv')
+else:
+        # all input features
+        # df.to_csv('data/pred_output.csv', index=False)
+        df = pd.read_csv('data/pred_output.csv')
+df_drop_race = pd.read_csv('data/pred_output_drop_race.csv')
 
 
 # st.markdown('### Metrics and Interpretation')
@@ -242,6 +268,69 @@ bias_interpret_section.markdown(bias_interpret1)
 bias_interpret_section.image('bias_table.png')
 bias_interpret_section.write(bias_interpret2)
 
+bias_discussion = '''
+        There is currently no universal metric to detect or assess biases in a model. 
+        
+        ProPublica has found that the COMPAS tool was biased for being twice as likely to falsely predict
+        African Americans as high risk when in fact they did not re-offend two years later.
+        
+        However, Northpointe, the company that developed the COMPAS tool, said that for any given score
+        on COMPAS' 10-point scale, white and black defendants were just as likely to be predicted as would re-offend.
+        
+        Both claims are correct in their own terms, because they have adopted different bias assessment metrics.
+        ProPublica calculated the "false positive rate", while Northpointe adopted the "calibration" method.
+        
+        It is also worth noting that the data that NorthPointe trained on, 
+        which our project would also be training with, may embed biases.
+        The likelihood of recidivism in the training data was possibly the outcome of a biased justice system.
+        That would be considered label bias.
+        This project focuses on model biases, assuming that we are discussing data with correct labels.
+        '''
+bias_discussion_section = st.beta_expander("Bias Evaluation: Discussion on Model Bias and Data Bias", False)
+bias_discussion_section.markdown(bias_discussion)
+
+bias_metrics = '''
+        Notions of fairness varies and are oftentimes conflicting. 
+        The following are a few ways we used in our project to compare how models performed:
+        
+        1. **Demographic Parity**: proportion of positive decision should be the same across all groups.
+        
+        _For our project, this metric means that the rate of 
+        labeling a defendant as high risk should be equal across
+        black and white defendants. However, this metric could cause 
+        problems when the true underlying distribution 
+        of risk labels differ across groups. Attempts to adjust for 
+        these differences often require misclassifying
+        low-risk members of one group as high-risk and vice versa, 
+        potentially harming members of all groups in the process._
+        
+        
+        2. **Equal Opportunity**: "true negative rate" (TNR) or "true positive rate" (TPR)
+        should be equal for all groups, focusing on the advantaged outcome.
+        
+        _Our project is a negative classification problem, 
+        thus focusing on looking into true negative rates. 
+        For our project, this metric means that the model 
+        would correctly classify defendants who do not re-offend
+        as low risk at equal rates for both black and white defendants._
+        
+        3. **Equalized Odds**: "false negative rate" (FNR) and "true negative rate" (TNR) 
+        should be equal across groups, focusing on the advantaged outcome.
+        
+        _Our project is a negative classification problem, 
+        thus focusing on looking into true and false negative rates.
+        Note that equalized odds is usually only possible by 
+        introducing randomness in the decision-making procedure._
+        
+        4. **Calibration**: model's predicted probability should be correct across all groups.
+         
+        _For our project, this metric means that among 
+        the defendants of a given risk score, 
+        the proportion that would re-offend is the same for both groups._        
+        '''
+bias_metrics_section = st.beta_expander("Bias Evaluation: Fairness Metrics", False)
+bias_metrics_section.markdown(bias_metrics)
+
 
 st.markdown('### Baseline Model: COMPAS')
 
@@ -260,12 +349,12 @@ baseline_eval_section.markdown(baseline_eval)
 # st.markdown('#### Bias Evaluation')
 baseline_p = metrics.propublica_analysis(df)
 baseline_bias = f'''
-        |COMPASS                              | White & others     | Black & Hispanic  |
+        |COMPASS                              | White              | Black             |
         |-------------------------------------|--------------------|-------------------|
         | Labeled High Risk, Didn’t Re-Offend | {baseline_p[0]}%   | {baseline_p[2]}%  |
         | Labeled Low Risk, Yet Did Re-Offend | {baseline_p[1]}%   | {baseline_p[3]}%  |
 '''
-baseline_bias_section = st.beta_expander("Baseline Model, Bias Evaluation", False)
+baseline_bias_section = st.beta_expander("Baseline Model, Bias Evaluation Table", False)
 baseline_bias_section.markdown(baseline_bias)
 
 # write interpretation
@@ -302,12 +391,12 @@ model_eval_section.markdown(model_eval)
 # st.markdown('#### Bias Evaluation')
 model_p = metrics.propublica_analysis(df, pred_label=model_name)
 model_bias = f'''
-        |{model_name}                         | White & others     | Black & Hispanic  |
+        |{model_name}                         | White              | Black             |
         |-------------------------------------|--------------------|-------------------|
         | Labeled High Risk, Didn’t Re-Offend | {model_p[0]}%      | {model_p[2]}%     |
         | Labeled Low Risk, Yet Did Re-Offend | {model_p[1]}%      | {model_p[3]}%     |
 '''
-model_bias_section = st.beta_expander(f"{model_name} Model, Bias Evaluation", False)
+model_bias_section = st.beta_expander(f"{model_name} Model, Bias Evaluation Table", False)
 model_bias_section.markdown(model_bias)
 
 # write interpretation
@@ -354,9 +443,6 @@ model_interpretation4 = f'''
         They are {round(model_p[1]/model_p[3],1)} times 
         more likely than blacks to be labeled lower risk but go on to commit other crimes.'''
 
-# st.markdown(model_interpretation1+model_interpretation11)
-# st.markdown(model_interpretation3+model_interpretation4)
-# st.markdown(model_interpretation2)
 model_interpretation_section = st.beta_expander(f"{model_name} Model, Interpretation", False)
 model_interpretation_section.markdown(model_interpretation1+model_interpretation11)
 model_interpretation_section.markdown(model_interpretation3+model_interpretation4)
@@ -365,37 +451,158 @@ model_interpretation_section.markdown(model_interpretation2)
 # (5) bias: scatter plot
 if model_name == 'Logistic Regression':
         model_scatter_section = st.beta_expander(f"{model_name} Model, Scatter Plot", False)
-        scatter_fig = utils.plot_scatter(df)
+        model_scatter_text = '''
+                ### Reading the Plot
+                Each scatter point in the plot represents an individual in our dataset.
+                The red points represent individuals that are "predicted as `high-risk`"
+                from our model and the blue points represent ones "predicted as `low-risk`".
+                
+                The x-axis for all four plots is **"race"**. In particular, the two plots on the left-hand side
+                are `African-American` and on the right-hand side are `Caucasian`.
+                
+                The y-axis for each individual plot is the **"probability 
+                of an individual re-offending"**.
+                The annotation is shown on the left of each plot.
+                In Logistic Regression, this probability is then 
+                translated to prediction labels. 
+                For example, the default is set to .5,
+                meaning that one whose predicted probability is over .5
+                would be labeled as high-risk.
+                Using the slider, you can see how 
+                increasing the threshold of re-offending probability even by .1
+                drastically affects who would be labelled as high-risk.
+                
+                The y-axis for all four plots is the **"ground truth 
+                of an individual re-offending"**.
+                The annotation is shown on the right for all plots.
+                
+                ### Interpreting the Plot
+                Therefore, for example, if we first look at the plot on the left-upper corner,
+                we see all the African Americans in our dataset that actually re-offended. 
+                The red points represent individuals who were labeled as "high-risk"
+                and actually did re-offened (**"true positive"**);
+                while the blue points represent individuals who were labeled as "low-risk"
+                but turned out to re-offend (**"false negative"**).
+                
+                You can use the same logic to interpret the rest of the plot, 
+                and observe for yourself, for example, 
+                what the false positive and false negative rates are for the two races,
+                and how they change when the threshold is changed.
+                
+                ### Using the Slider
+                **Pro Tip**: Drag the window size to be longer to 
+                see the changes in all four scatter plots at once.
+                '''
+        model_scatter_section.markdown(model_scatter_text)
+        threshold_slider = model_scatter_section.slider("Risk Probability Threshold:", 
+                                                 min_value=0.0, max_value=1.0, value=0.5, step=0.01)
+        scatter_fig = utils.plot_scatter(df, threshold=threshold_slider)
         model_scatter_section.pyplot(scatter_fig)
 
 
 # st.markdown('---')
 
 st.markdown('## Compare Model Results')
+st.markdown('''
+        Compare baseline COMPAS model with all the machine learning models we tried out.
+        ''')
 
-model_names = st.multiselect("Choose models to compare", options=model_options, default=model_options)
+# model_names = st.multiselect("Choose models to compare", options=model_options, default=model_options)
 
-model_line_section = st.beta_expander("All Selected Models, Model Evaluation Metrics, Line Plot", False)
+model_line_section = st.beta_expander("All Models, Model Evaluation Metrics, Line Plot", False)
 plot_precision = model_line_section.checkbox('Also compare precision results?', value=False)
-line_fig = utils.plot_line(df, model_names, precision=plot_precision)
-model_line_section.pyplot(line_fig)
+model_line_fig = utils.plot_line_model(df, model_options, precision=plot_precision)
+model_line_section.pyplot(model_line_fig)
 
-model_heatmap_section = st.beta_expander("All Selected Models, Bias Evaluation Table, Heatmap Plot", False)
+fairness_line_section = st.beta_expander("All Models, Bias Evaluation Metrics, Line Plot", False)
+plot_dp = fairness_line_section.checkbox('Compare demographic parity?', value=False)
+plot_eop = fairness_line_section.checkbox('Compare equal opportunity?', value=True)
+plot_eod = fairness_line_section.checkbox('Compare equalized odds?', value=False)
+plot_ca = fairness_line_section.checkbox('Compare calibration?', value=False)
+fairness_line_fig = utils.plot_line_fairness(df, model_options,
+                                             dp=plot_dp, eop=plot_eop, eod=plot_eod, ca=plot_ca)
+fairness_line_section.pyplot(fairness_line_fig)
+
+model_heatmap_section = st.beta_expander("All Models, Bias Evaluation Table, Heatmap Plot", False)
 
 # initialize with baseline compas
 models_p = list()
 model_p = metrics.propublica_analysis(df)
 model_p_arr = np.array([[model_p[0], model_p[2]], [model_p[1], model_p[3]]])
 models_p.append(model_p_arr)
+
+vals = list()
+vals.extend(model_p)
+
 # get model probs
-for model_name in model_names:
+for model_name in model_options:
         model_p = metrics.propublica_analysis(df, pred_label=model_name)
         model_p_arr = np.array([[model_p[0], model_p[2]], [model_p[1], model_p[3]]])
         models_p.append(model_p_arr)
+        vals.extend(model_p)
 
-heatmap_fig = utils.plot_heatmap(model_names, models_p)
+heatmap_fig = utils.plot_heatmap(model_options, models_p, vals)
 model_heatmap_section.pyplot(heatmap_fig)
 
+st.markdown('## Reducing Bias')
+
+naive_reduce_bias_section = st.beta_expander('Dropping the "race" variable', False)
+
+naive_reduce_bias_text = '''
+        First, we tried the naive method of simply dropping the race_num variables,
+        namely `African_American` and `Caucasian` columns from the models input features.
+        The result is shown in the heatmap below, which calculates the difference of the bias tables 
+        between keeping and dropping the race variables as an input feature.
+        
+        A possible reason why simply dropping the race variable did not reduce racial bias in the model is because
+        the other input features in the model are also correlated with the race variable. In other words, even though
+        we dropped the race variable itself, the other input variables that are correlated with the race variable can
+        still contribute to creating racial bias for the prediction results.
+        
+        For example, `age` is a variable that highly negatively correlates with `African_American` 
+        (as seen in the correlation matrix plot shown in the "Input Varaibles" section). 
+        
+        One might think, why not remove all the variables related to race then? One simple answer to this proposal
+        is that many variables are correlated with the race variable.
+        Also, given the constraint of the data, there are not many input features to start with,
+        and dropping more features could really limit the training.
+        '''
+naive_reduce_bias_section.markdown(naive_reduce_bias_text)
+
+models_p_drop_race = list()
+model_p_drop_race = metrics.propublica_analysis(df_drop_race)
+model_p_drop_race_arr = np.array([[model_p_drop_race[0], model_p_drop_race[2]], [model_p_drop_race[1], model_p_drop_race[3]]])
+models_p_drop_race.append(model_p_drop_race_arr)
+
+vals_drop_race = list()
+vals_drop_race.extend(model_p_drop_race)
+
+# get model probs
+for model_name in model_options:
+        model_p_drop_race = metrics.propublica_analysis(df_drop_race, pred_label=model_name)
+        model_p_drop_race_arr = np.array([[model_p_drop_race[0], model_p_drop_race[2]], [model_p_drop_race[1], model_p_drop_race[3]]])
+        models_p_drop_race.append(model_p_drop_race_arr)
+        vals_drop_race.extend(model_p_drop_race)
+
+models_p_diff = np.subtract(models_p, models_p_drop_race)
+vals_diff = np.subtract(vals, vals_drop_race)
+
+heatmap_fig_drop_race = utils.plot_heatmap(model_options, models_p_diff, vals_diff)
+naive_reduce_bias_section.pyplot(heatmap_fig_drop_race)
+
+st.markdown('## Conclusion')
+conclusion = '''
+        xxx
+        '''
+st.markdown(conclusion)
+
+st.markdown('## References')
+references = '''
+        1. Corbett-Davies & Goel's "The Measure and Mismeasure of Fairness" 
+        
+        2. Hardt, Price, and Srebro's "Equality of Opportunity in Supervised Learning"
+        '''
+st.markdown(references)
 
 # st.markdown('---')
 # st.markdown('## Distribution of Work')

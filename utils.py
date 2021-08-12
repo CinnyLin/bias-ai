@@ -4,7 +4,11 @@ import matplotlib.pyplot as plt
 import matplotlib
 from models import metrics, models 
 
-def plot_line(df, model_names, precision=False):
+def plot_line_model(df, model_names, precision=False):
+    '''
+    Line plot for model evaluation
+    '''
+    
     fig, ax = plt.subplots(figsize=(20,7))
     
     # get data
@@ -24,15 +28,61 @@ def plot_line(df, model_names, precision=False):
     plt.plot(model_names, model_accuracies, label='accuracy', color='#D64949')
     plt.axhline(baseline_accuracy, alpha=0.8, linestyle='--', color='#FF5733', label='baseline accuracy')
     
-    if precision:
+    if precision==True:
         plt.plot(model_names, model_precisions, label='precision', color='#2E4FBD')
         plt.axhline(baseline_precision, alpha=0.8, linestyle='--', color='#6495ED', label='baseline precision')
     
     ax.legend()
     return fig
 
+def plot_line_fairness(df, model_names, 
+                       dp=False, eop=False, eod=False, ca=False):
+    '''
+    Line plot for fairness evaluation
+    '''
+    
+    fig, ax = plt.subplots(figsize=(20,7))
+    
+    # get data
+    bsl_dp, bsl_eop, bsl_eod, bsl_ca = metrics.fairness_metrics(df)
+    
+    mdl_dps = []
+    mdl_eops = []
+    mdl_eods = []
+    mdl_cas = []
+
+    for model in model_names:
+        mdl_dp, mdl_eop, mdl_eod, mdl_ca = metrics.fairness_metrics(df, pred_label=model)
+        mdl_dps.append(mdl_dp)
+        mdl_eops.append(mdl_eop)
+        mdl_eods.append(mdl_eod)
+        mdl_cas.append(mdl_ca)
+    
+    # plot
+    if dp:
+        plt.plot(model_names, mdl_dps, label='demographic parity', color='#2E4FBD') #blue
+        plt.axhline(bsl_dp, alpha=0.8, linestyle='--', color='#6495ED', label='baseline demographic parity')
+        
+    if eop:
+        plt.plot(model_names, mdl_eops, label='equal opportunity', color='#D64949') #red
+        plt.axhline(bsl_eop, alpha=0.8, linestyle='--', color='#FF5733', label='baseline equal opportunity')
+    
+    if eod:
+        plt.plot(model_names, mdl_eods, label='equalized odds', color='#097969') #green
+        plt.axhline(bsl_eod, alpha=0.8, linestyle='--', color='#2AAA8A', label='baseline equalized odds')
+    
+    if ca:
+        plt.plot(model_names, mdl_cas, label='calibration', color='#702963') #purple
+        plt.axhline(bsl_ca, alpha=0.8, linestyle='--', color='#AA336A', label='baseline calibration')
+    
+    ax.legend()
+    return fig
+
+
+
 def plot_scatter(df, y='Logistic Regression Prob', threshold=0.5):
-    race_filter = df['race_num']==1
+    race_filter1 = df['African_American']==1
+    race_filter2 = df['Caucasian']==1
     truth_filter = df['recidivism_within_2_years']==1
     prob_filter = df[y]>=threshold
     
@@ -42,29 +92,29 @@ def plot_scatter(df, y='Logistic Regression Prob', threshold=0.5):
     plt.subplots_adjust(wspace=0.05, hspace=0.05) 
 
     ax1 = plt.subplot(2, 2, 1)
-    df1 = df[race_filter&truth_filter]
+    df1 = df[race_filter1&truth_filter]
     ax1.plot(df1[prob_filter][y], 'o', c='#C0392B')
     ax1.plot(df1[(~prob_filter)][y], 'o', c='#2874A6')
     ax1.set_xticks([])
     ax1.set_yticks([0, 0.5, 1])
-    ax1.set_title('African American & Hispanic')
+    ax1.set_title('African American')
 
     ax2 = plt.subplot(2, 2, 2)
-    df2 = df[(~race_filter)&truth_filter]
+    df2 = df[(race_filter2)&truth_filter]
     ax2.plot(df2[prob_filter][y], 'o', c='#C0392B')
     ax2.plot(df2[(~prob_filter)][y], 'o', c='#2874A6')
     ax2.set_xticks([])
     ax2.set_yticks([0, 0.5, 1])
-    ax2.set_title('Caucasian & others')
+    ax2.set_title('Caucasian')
 
     ax3 = plt.subplot(2, 2, 3)
-    df3 = df[race_filter&(~truth_filter)]
+    df3 = df[race_filter1&(~truth_filter)]
     ax3.plot(df3[prob_filter][y], 'o', c='#C0392B')
     ax3.plot(df3[(~prob_filter)][y], 'o', c='#2874A6')
     ax3.set_xticks([])
 
     ax4 = plt.subplot(2, 2, 4)
-    df4 = df[(~race_filter) & (~truth_filter)]
+    df4 = df[(race_filter2) & (~truth_filter)]
     ax4.plot(df1[prob_filter][y], 'o', c='#C0392B')
     ax4.plot(df1[(~prob_filter)][y], 'o', c='#2874A6')
     ax4.set_xticks([])
@@ -77,9 +127,14 @@ def plot_scatter(df, y='Logistic Regression Prob', threshold=0.5):
     return fig
 
 
-def plot_heatmap(model_names, data, 
+def plot_heatmap(model_names, data, vals,
                  row_labels=["False Positive", "False Negative"], col_labels=["White", "Black"]):
+            
+    ## get min/max
+    data_min = min(vals)
+    data_max = max(vals)
     
+    # plot
     fig, ax = plt.subplots(nrows=2, ncols=4,  sharex=True, sharey=True, figsize=(10, 10))
     plt.subplots_adjust(top=4.5, bottom=3, right=6, left=3.5, wspace=0.05, hspace=0.05)
     
@@ -87,9 +142,10 @@ def plot_heatmap(model_names, data,
     
     for i in range(8):
         ax = plt.subplot(2, 4, i+1)
-        im = ax.imshow(data[i], cmap="YlOrRd")
+        im = ax.imshow(data[i], cmap="YlOrRd",
+                       vmin=data_min, vmax=data_max)
 
-        annotate_heatmap(im, valfmt="{x:.0f}%", size=fontsize)
+        annotate_heatmap(im, valfmt="{x:.0f}%", size=40)
 
         ax.set_xticks(np.arange(data[i].shape[1]))
         ax.set_yticks(np.arange(data[i].shape[0]))
