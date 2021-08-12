@@ -739,7 +739,7 @@ preprocess_section.markdown(preprocess_text)
 # (2) In-processing
 # model evaluation metrics
 model_name = 'In-processing'
-in_y_vt, in_y_pred = debias_model.inprocessing_aversarial_debaising(df, X, y)
+in_y_vt, in_y_pred, in_dataframe_orig_vt = debias_model.inprocessing_aversarial_debaising(df, X, y)
 in_df = pd.DataFrame({'recidivism_within_2_years': in_y_vt, f'{model_name}': in_y_pred})
 in_accuracy = metrics.get_accuracy(in_df, pred_label=model_name)
 in_precision = metrics.get_precision(in_df, pred_label=model_name)
@@ -750,6 +750,24 @@ in_eval = f'''
         - **{model_name} recall** = {in_recall:.5f}
                 '''
 
+in_dataframe_orig_vt[f'{model_name}'] = in_y_pred
+# bias evaluation table
+in_p = metrics.propublica_analysis(in_dataframe_orig_vt, pred_label=model_name)
+in_bias_table = f'''
+        |{model_name}                         | White              | Black             |
+        |-------------------------------------|--------------------|-------------------|
+        | Labeled High Risk, Didn’t Re-Offend | {in_p[0]}%      | {in_p[2]}%     |
+        | Labeled Low Risk, Yet Did Re-Offend | {in_p[1]}%      | {in_p[3]}%     |
+                '''
+
+# fairness metrics
+in_dp, in_eop, in_eod, in_ca = metrics.fairness_metrics(in_dataframe_orig_vt, pred_label=model_name)
+in_fairness = f'''
+        - **{model_name} demographic parity** = {in_dp:.5f}
+        - **{model_name} equal opportunity** = {in_eop:.5f}
+        - **{model_name} equalized odds** = {in_eod:.5f}
+        - **{model_name} calibration** = {in_ca:.5f}
+                '''
 
 inprocess_section = st.beta_expander('In-processing the Classifier', False)
 inprocess_text = f'''
@@ -763,13 +781,19 @@ inprocess_text = f'''
         
         ### Model Evaluation Metrics
         {in_eval}
+        
+        ### Bias Evaluation Table
+        {in_bias_table}
+        
+        ### Fairness Metrics
+        {in_fairness}
         '''
 inprocess_section.markdown(inprocess_text)
 
 # (3) Post-processing
 # model evaluation metrics
 model_name = 'Post-processing'
-post_y_vt, post_y_pred = debias_model.postprocessing_calibrated_eq_odd(df, X, y)
+post_y_vt, post_y_pred, post_dataframe_orig_vt = debias_model.postprocessing_calibrated_eq_odd(df, X, y)
 post_df = pd.DataFrame({'recidivism_within_2_years': post_y_vt, f'{model_name}': post_y_pred})
 post_accuracy = metrics.get_accuracy(post_df, pred_label=model_name)
 post_precision = metrics.get_precision(post_df, pred_label=model_name)
@@ -778,6 +802,25 @@ post_eval = f'''
         - **{model_name} accuracy** = {post_accuracy:.5f}
         - **{model_name} precision** = {post_precision:.5f}
         - **{model_name} recall** = {post_recall:.5f}
+                '''
+
+post_dataframe_orig_vt[f'{model_name}'] = post_y_pred
+# bias evaluation table
+post_p = metrics.propublica_analysis(post_dataframe_orig_vt, pred_label=model_name)
+post_bias_table = f'''
+        |{model_name}                         | White              | Black             |
+        |-------------------------------------|--------------------|-------------------|
+        | Labeled High Risk, Didn’t Re-Offend | {post_p[0]}%      | {post_p[2]}%     |
+        | Labeled Low Risk, Yet Did Re-Offend | {post_p[1]}%      | {post_p[3]}%     |
+                '''
+
+# fairness metrics
+post_dp, post_eop, post_eod, post_ca = metrics.fairness_metrics(post_dataframe_orig_vt, pred_label=model_name)
+post_fairness = f'''
+        - **{model_name} demographic parity** = {post_dp:.5f}
+        - **{model_name} equal opportunity** = {post_eop:.5f}
+        - **{model_name} equalized odds** = {post_eod:.5f}
+        - **{model_name} calibration** = {post_ca:.5f}
                 '''
 
 postprocess_section = st.beta_expander('Post-processing the Predictions', False)
@@ -792,16 +835,70 @@ postprocess_text = f'''
         ### Model Evaluation Metrics
         {post_eval}
         
+        ### Bias Evaluation Table
+        {post_bias_table}
+        
+        ### Fairness Metrics
+        {post_fairness}
         '''
 postprocess_section.markdown(postprocess_text)
 
+# (4) Compare Processes
 compare_process_section = st.beta_expander('Compare Processing Results', False)
 
+compare_process_section.markdown('### Model Evaluation')
 plot_precision = compare_process_section.checkbox('Also plot precision results?', value=False)
 process_accuracies = [pre_accuracy, in_accuracy, post_accuracy]
 process_precisions = [pre_precision, in_precision, post_precision]
 model_line_fig = utils.plot_line_process(df, process_accuracies, process_precisions, precision=plot_precision)
 compare_process_section.pyplot(model_line_fig)
+
+
+compare_process_section.markdown('### Bias Evaluation')
+
+compare_process_section.markdown('''
+        We see that the percentage of Blacks being falsely predicted positive
+        decreased as we adopted different bias-reduction algorithms.
+        ''')
+
+# initialize with baseline compas
+models_p = list()
+model_p = metrics.propublica_analysis(df)
+model_p_arr = np.array([[model_p[0], model_p[2]], [model_p[1], model_p[3]]])
+models_p.append(model_p_arr)
+
+vals = list()
+vals.extend(model_p)
+
+# get model probs
+model_probs = [pre_p, in_p, post_p]
+for model_prob in model_probs:
+        model_p_arr = np.array([[model_prob[0], model_prob[2]], [model_prob[1], model_prob[3]]])
+        models_p.append(model_p_arr)
+        vals.extend(model_prob)
+
+model_names = ['Pre-processing', 'In-processing', 'Post-processing']
+heatmap_process_fig = utils.plot_heatmap_process(model_names, models_p, vals)
+compare_process_section.pyplot(heatmap_process_fig)
+
+
+compare_process_section.markdown('### Fairness Metrics')
+# plot buttons
+plot_dp = compare_process_section.checkbox('Plot demographic parity?', value=False)
+plot_eop = compare_process_section.checkbox('Plot equal opportunity?', value=True)
+plot_eod = compare_process_section.checkbox('Plot equalized odds?', value=False)
+plot_ca = compare_process_section.checkbox('Plot calibration?', value=False)
+# get data
+mdl_dps = [pre_dp, in_dp, post_dp]
+mdl_eops = [pre_eop, in_eop, post_eop]
+mdl_eods = [pre_eod, in_eod, post_eod]
+mdl_cas = [pre_ca, in_ca, post_ca]
+# plot
+line_process_fig = utils.plot_line_fairness_process(df, model_names,
+                        mdl_dps, mdl_eops, mdl_eods, mdl_cas,
+                        dp=plot_dp, eop=plot_eop, eod=plot_eod, ca=plot_ca)
+compare_process_section.pyplot(line_process_fig)
+
 
 # st.markdown('## Conclusion')
 # conclusion = '''

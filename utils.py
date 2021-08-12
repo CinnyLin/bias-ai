@@ -97,6 +97,50 @@ def plot_line_process(df, model_accuracies, model_precisions, precision=False):
     ax.legend()
     return fig
 
+def plot_line_fairness_process(df, model_names,
+                               mdl_dps, mdl_eops, mdl_eods, mdl_cas,
+                               dp=False, eop=False, eod=False, ca=False):
+    '''
+    Line plot for fairness evaluation
+    '''
+    
+    fig, ax = plt.subplots(figsize=(20,7))
+    
+    # get data
+    bsl_dp, bsl_eop, bsl_eod, bsl_ca = metrics.fairness_metrics(df)
+    
+    # mdl_dps = []
+    # mdl_eops = []
+    # mdl_eods = []
+    # mdl_cas = []
+
+    # for model in model_names:
+    #     mdl_dp, mdl_eop, mdl_eod, mdl_ca = metrics.fairness_metrics(df, pred_label=model)
+    #     mdl_dps.append(mdl_dp)
+    #     mdl_eops.append(mdl_eop)
+    #     mdl_eods.append(mdl_eod)
+    #     mdl_cas.append(mdl_ca)
+    
+    # plot
+    if dp:
+        plt.plot(model_names, mdl_dps, label='demographic parity', color='#2E4FBD') #blue
+        plt.axhline(bsl_dp, alpha=0.8, linestyle='--', color='#6495ED', label='baseline demographic parity')
+        
+    if eop:
+        plt.plot(model_names, mdl_eops, label='equal opportunity', color='#D64949') #red
+        plt.axhline(bsl_eop, alpha=0.8, linestyle='--', color='#FF5733', label='baseline equal opportunity')
+    
+    if eod:
+        plt.plot(model_names, mdl_eods, label='equalized odds', color='#097969') #green
+        plt.axhline(bsl_eod, alpha=0.8, linestyle='--', color='#2AAA8A', label='baseline equalized odds')
+    
+    if ca:
+        plt.plot(model_names, mdl_cas, label='calibration', color='#702963') #purple
+        plt.axhline(bsl_ca, alpha=0.8, linestyle='--', color='#AA336A', label='baseline calibration')
+    
+    ax.legend()
+    return fig
+
 
 def plot_scatter(df, y='Logistic Regression Prob', threshold=0.5):
     race_filter1 = df['African_American']==1
@@ -153,7 +197,7 @@ def plot_heatmap(model_names, data, vals,
     data_max = max(vals)
     
     # plot
-    fig, ax = plt.subplots(nrows=2, ncols=4,  sharex=True, sharey=True, figsize=(10, 10))
+    fig, ax = plt.subplots(nrows=2, ncols=4, sharex=True, sharey=True, figsize=(10, 10))
     plt.subplots_adjust(top=4.5, bottom=3, right=6, left=3.5, wspace=0.05, hspace=0.05)
     
     fontsize = 20
@@ -182,6 +226,45 @@ def plot_heatmap(model_names, data, vals,
         ax.spines[:].set_visible(False) # remove grid
 
     return fig
+
+def plot_heatmap_process(model_names, data, vals,
+                 row_labels=["False Positive", "False Negative"], col_labels=["White", "Black"]):
+            
+    ## get min/max
+    data_min = min(vals)
+    data_max = max(vals)
+    
+    # plot
+    fig, ax = plt.subplots(nrows=1, ncols=4, sharex=True, sharey=True, figsize=(10, 10))
+    plt.subplots_adjust(top=4.5, bottom=3, right=6, left=3.5, wspace=0.05, hspace=0.05)
+    
+    fontsize = 20
+    
+    for i in range(4):
+        ax = plt.subplot(1, 4, i+1)
+        im = ax.imshow(data[i], cmap="YlOrRd",
+                       vmin=data_min, vmax=data_max)
+
+        annotate_heatmap(im, valfmt="{x:.0f}%", size=40)
+
+        ax.set_xticks(np.arange(data[i].shape[1]))
+        ax.set_yticks(np.arange(data[i].shape[0]))
+        ax.set_xticklabels(col_labels, size=fontsize)
+        ax.set_yticklabels(row_labels, size=fontsize)
+        ax.tick_params(top=True, bottom=False,
+                       labeltop=True, labelbottom=False)
+        plt.setp(ax.get_xticklabels(), rotation=-30, ha="right",
+                 rotation_mode="anchor")
+
+        if i == 0:
+            ax.set_xlabel('Baseline COMPAS', size=fontsize)
+        else:
+            ax.set_xlabel(model_names[i-1], size=fontsize)
+
+        ax.spines[:].set_visible(False) # remove grid
+
+    return fig
+
 
 
 def annotate_heatmap(im, data=None, valfmt="{x:.2f}",

@@ -75,8 +75,12 @@ def propublica_analysis(df, truth_label='recidivism_within_2_years', \
     tp, tn, fp, fn = get_filters(df, truth_label, pred_label)
     
     # create race filters
-    r1 = (df['race']=='Caucasian')
-    r2 = (df['race']=='African-American')
+    try:
+        r1 = (df['race']=='Caucasian')
+        r2 = (df['race']=='African-American')
+    except:
+        r1 = (df['Caucasian']==1)
+        r2 = (df['African_American']==1)
     
     # get lengths
     fp1 = len(df[fp&r1])
@@ -131,8 +135,12 @@ def fairness_metrics(df, truth_label='recidivism_within_2_years', \
     tp, tn, fp, fn = get_filters(df, truth_label, pred_label)
     
     # create race filters
-    r1 = (df['race']=='Caucasian')
-    r2 = (df['race']=='African-American')
+    try:
+        r1 = (df['race']=='Caucasian')
+        r2 = (df['race']=='African-American')
+    except:
+        r1 = (df['Caucasian']==1)
+        r2 = (df['African_American']==1)
     
     # get lengths
     # false
@@ -155,10 +163,15 @@ def fairness_metrics(df, truth_label='recidivism_within_2_years', \
     '''
     pos1 = (fp1+tp1)/len1
     pos2 = (fp2+tp2)/len2
-    demographic_parity = pos1/pos2
-    if demographic_parity>1:
-        demographic_parity = pos2/pos1
     
+    try:
+        demographic_parity = pos1/pos2
+        
+        if demographic_parity>1:
+            demographic_parity = pos2/pos1
+    
+    except ZeroDivisionError:
+        demographic_parity = 0
     
     '''
     2. equal opportunity:
@@ -166,9 +179,15 @@ def fairness_metrics(df, truth_label='recidivism_within_2_years', \
     '''
     tnr1 = tn1/len1
     tnr2 = tn2/len2
-    equal_opportunity = tnr1/tnr2
-    if equal_opportunity>1:
-        equal_opportunity = tnr2/tnr1
+    
+    try:
+        equal_opportunity = tnr1/tnr2
+        
+        if equal_opportunity>1:
+            equal_opportunity = tnr2/tnr1
+    
+    except ZeroDivisionError:
+        equal_opportunity = 0
     
     '''
     3. equalized odds: 
@@ -176,9 +195,15 @@ def fairness_metrics(df, truth_label='recidivism_within_2_years', \
     '''
     fnr1 = fn1/len1
     fnr2 = fn2/len2
-    equalized_odds = fnr1/fnr2
-    if equalized_odds > 1:
-        equalized_odds = fnr2/fnr1
+    
+    try:
+        equalized_odds = fnr1/fnr2
+    
+        if equalized_odds > 1:
+            equalized_odds = fnr2/fnr1
+    
+    except ZeroDivisionError:
+        equalized_odds = 0
     
     '''
     4. calibration
@@ -188,10 +213,17 @@ def fairness_metrics(df, truth_label='recidivism_within_2_years', \
     correct_positive_rate2 = (tp2+fn2)/len2
     predicted_positive_rate1 = (tp1+fp1)/len1
     predicted_positive_rate2 = (tp2+fp2)/len2
+    
     calibration1 = predicted_positive_rate1/correct_positive_rate1
     calibration2 = predicted_positive_rate2/correct_positive_rate2
-    calibration = calibration1/calibration2
-    if calibration>1:
-        calibration = calibration2/calibration1
+    
+    try:
+        calibration = calibration1/calibration2
+        
+        if calibration>1:
+            calibration = calibration2/calibration1
+    
+    except ZeroDivisionError:
+        calibration = 0
     
     return demographic_parity, equal_opportunity, equalized_odds, calibration
