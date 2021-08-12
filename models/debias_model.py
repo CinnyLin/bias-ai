@@ -95,20 +95,35 @@ def inprocessing_aversarial_debaising(df, X, y):
     return y_vt, y_pred
     
     
-# y_pred = inprocessing_aversarial_debaising(df, X, y)
-# print(y_pred)
 
 
 
 
-def postprocessing(df,X, y):
+
+def postprocessing_calibrated_eq_odd(df,X, y):
+    data = load_data(df, X, y)
+    dataset_orig_train = data[0]
+    dataset_orig_vt = data[1]
+    scale_orig = StandardScaler()
+    X_train = scale_orig.fit_transform(dataset_orig_train.features)
+    y_train = dataset_orig_train.labels.ravel()    
+    X_vt = scale_orig.fit_transform(dataset_orig_vt.features)
+    y_vt = dataset_orig_vt.labels.ravel()  
+    dataset_orig_train_pred = dataset_orig_train.copy(deepcopy=True)
+    privileged_groups = [{'race': 1}]
+    unprivileged_groups = [{'race': 0}]
     cost_constraint = "fnr" 
     randseed = 12345679 
     cpp = CalibratedEqOddsPostprocessing(privileged_groups = privileged_groups,
                                         unprivileged_groups = unprivileged_groups,
                                         cost_constraint=cost_constraint,
                                         seed=randseed)
-    cpp = cpp.fit(dataset_orig_valid, dataset_orig_valid_pred)
+    cpp = cpp.fit(dataset_orig_train,  dataset_orig_train_pred)
+    y_pred = cpp.predict(dataset_orig_vt).labels.ravel()
+    print(accuracy_score(y_vt, y_pred))
+    return y_vt, y_pred
+y_pred = postprocessing_calibrated_eq_odd(df, X, y)
+print(y_pred)
 
 
 
