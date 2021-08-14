@@ -9,7 +9,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # custom modules
-from models import metrics, models, debias_model
+from models import metrics, models#, debias_model
 import utils
 
 title = 'Bias AI' #'Bias in Recidivism Prediction'
