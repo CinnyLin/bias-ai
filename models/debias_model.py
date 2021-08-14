@@ -16,7 +16,7 @@ from aif360.algorithms.postprocessing.calibrated_eq_odds_postprocessing import C
 
 #load data
 import pandas as pd
-import streamlit as st
+import numpy as np
 
 def load_data(df, X, y):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4, random_state=42)
@@ -132,8 +132,8 @@ def postprocessing_calibrated_eq_odd(df,X, y):
     cpp = cpp.fit(dataset_orig_train, dataset_orig_train_pred)
     
     y_pred = cpp.predict(dataset_orig_vt_pred)
-    print(y_pred.labels.ravel())
-    print(accuracy_score(y_pred.labels.ravel(), y_vt))
+    # print(y_pred.labels.ravel())
+    # print(accuracy_score(y_pred.labels.ravel(), y_vt))
 
     return y_vt, y_pred.labels.ravel(), dataframe_orig_vt
 

@@ -142,7 +142,7 @@ y_col = st.selectbox(label='Target variable (y)', options=['recidivism_within_2_
 default_input_features = list(num_cols.drop([y_col, 'id', 'COMPASS_determination']))
 X_cols = st.multiselect(label='Training variables (X)', options=default_input_features,
                         default=default_input_features,
-                        help='Only numerical columns are visible as options.')
+                        help='''Only numerical columns are visible as options.''')
 
 # get data
 y = df[y_col]
@@ -197,6 +197,10 @@ def run_models(model_options, df, X, y):
                 elif model_name == 'Artificial Neural Network':
                         y_pred = models.ANN(X, y)
                         df[model_name] =  y_pred
+
+                # elif model_name == 'Pre-processing':
+                #         y_pred = debias_model.preprocessing_Reweighing(df, X, y)
+                #         df[model_name] = y_pred
                 
         return df
 
@@ -689,11 +693,13 @@ naive_reduce_bias_section.pyplot(heatmap_fig_drop_race)
 # (1) Pre-processing
 # model evaluation metrics
 model_name = 'Pre-processing'
-pre_y_pred = debias_model.preprocessing_Reweighing(df, X, y)
-df[f'{model_name}'] = pre_y_pred
-pre_accuracy = metrics.get_accuracy(df, pred_label=model_name)
-pre_precision = metrics.get_precision(df, pred_label=model_name)
-pre_recall = metrics.get_recall(df, pred_label=model_name)
+# pre_y_pred = debias_model.preprocessing_Reweighing(df, X, y)
+# df[f'{model_name}'] = pre_y_pred
+# pre_df =  df.to_csv('data/pre_df.csv', index=False)
+pre_df = pd.read_csv('data/pre_df.csv')
+pre_accuracy = metrics.get_accuracy(pre_df, pred_label=model_name)
+pre_precision = metrics.get_precision(pre_df, pred_label=model_name)
+pre_recall = metrics.get_recall(pre_df, pred_label=model_name)
 pre_eval = f'''
         - **{model_name} accuracy** = {pre_accuracy:.5f}
         - **{model_name} precision** = {pre_precision:.5f}
@@ -701,7 +707,7 @@ pre_eval = f'''
                 '''
 
 # bias evaluation table
-pre_p = metrics.propublica_analysis(df, pred_label=model_name)
+pre_p = metrics.propublica_analysis(pre_df, pred_label=model_name)
 pre_bias_table = f'''
         |{model_name}                         | White              | Black             |
         |-------------------------------------|--------------------|-------------------|
@@ -710,7 +716,7 @@ pre_bias_table = f'''
                 '''
 
 # fairness metrics
-pre_dp, pre_eop, pre_eod, pre_ca = metrics.fairness_metrics(df, pred_label=model_name)
+pre_dp, pre_eop, pre_eod, pre_ca = metrics.fairness_metrics(pre_df, pred_label=model_name)
 pre_fairness = f'''
         - **{model_name} demographic parity** = {pre_dp:.5f}
         - **{model_name} equal opportunity** = {pre_eop:.5f}
@@ -739,8 +745,10 @@ preprocess_section.markdown(preprocess_text)
 # (2) In-processing
 # model evaluation metrics
 model_name = 'In-processing'
-in_y_vt, in_y_pred, in_dataframe_orig_vt = debias_model.inprocessing_aversarial_debaising(df, X, y)
-in_df = pd.DataFrame({'recidivism_within_2_years': in_y_vt, f'{model_name}': in_y_pred})
+# in_y_vt, in_y_pred, in_dataframe_orig_vt = debias_model.inprocessing_aversarial_debaising(df, X, y)
+# in_df = pd.DataFrame({'recidivism_within_2_years': in_y_vt, f'{model_name}': in_y_pred})
+# in_df.to_csv('data/in_df.csv', index=False)
+in_df = pd.read_csv('data/in_df.csv')
 in_accuracy = metrics.get_accuracy(in_df, pred_label=model_name)
 in_precision = metrics.get_precision(in_df, pred_label=model_name)
 in_recall = metrics.get_recall(in_df, pred_label=model_name)
@@ -750,7 +758,9 @@ in_eval = f'''
         - **{model_name} recall** = {in_recall:.5f}
                 '''
 
-in_dataframe_orig_vt[f'{model_name}'] = in_y_pred
+# in_dataframe_orig_vt[f'{model_name}'] = in_y_pred
+# in_dataframe_orig_vt.to_csv('data/in_dataframe_orig_vt.csv', index=False)
+in_dataframe_orig_vt = pd.read_csv('data/in_dataframe_orig_vt.csv')
 # bias evaluation table
 in_p = metrics.propublica_analysis(in_dataframe_orig_vt, pred_label=model_name)
 in_bias_table = f'''
@@ -793,8 +803,10 @@ inprocess_section.markdown(inprocess_text)
 # (3) Post-processing
 # model evaluation metrics
 model_name = 'Post-processing'
-post_y_vt, post_y_pred, post_dataframe_orig_vt = debias_model.postprocessing_calibrated_eq_odd(df, X, y)
-post_df = pd.DataFrame({'recidivism_within_2_years': post_y_vt, f'{model_name}': post_y_pred})
+# post_y_vt, post_y_pred, post_dataframe_orig_vt = debias_model.postprocessing_calibrated_eq_odd(df, X, y)
+# post_df = pd.DataFrame({'recidivism_within_2_years': post_y_vt, f'{model_name}': post_y_pred})
+# post_df.to_csv('data/post_df.csv', index=False)
+post_df = pd.read_csv('data/post_df.csv')
 post_accuracy = metrics.get_accuracy(post_df, pred_label=model_name)
 post_precision = metrics.get_precision(post_df, pred_label=model_name)
 post_recall = metrics.get_recall(post_df, pred_label=model_name)
@@ -804,7 +816,9 @@ post_eval = f'''
         - **{model_name} recall** = {post_recall:.5f}
                 '''
 
-post_dataframe_orig_vt[f'{model_name}'] = post_y_pred
+# post_dataframe_orig_vt[f'{model_name}'] = post_y_pred
+# post_dataframe_orig_vt.to_csv('data/post_dataframe_orig_vt.csv', index=False)
+post_dataframe_orig_vt = pd.read_csv('data/post_dataframe_orig_vt.csv')
 # bias evaluation table
 post_p = metrics.propublica_analysis(post_dataframe_orig_vt, pred_label=model_name)
 post_bias_table = f'''
@@ -918,9 +932,9 @@ references = '''
         
         2. Hardt, Price, and Srebro's "Equality of Opportunity in Supervised Learning"
         
-        3. Google's What-If-Tool [COMPAS demo](https://pair-code.github.io/what-if-tool/demos/compas.html)
+        3. Google's What-If-Tool
         
-        4. IBM's AI Fairness 360 [COMPAS demo](https://aif360.mybluemix.net/check) 
+        4. IBM's AI Fairness 360
         '''
 st.markdown(references)
 
