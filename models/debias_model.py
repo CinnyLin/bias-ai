@@ -82,28 +82,61 @@ def inprocessing_aversarial_debaising(df, X, y):
 
 def postprocessing_calibrated_eq_odd(df,X, y):
     dataset_orig_train, dataset_orig_vt, dataframe_orig_vt = load_data(df, X, y)
-    
+
+
     scale_orig = StandardScaler()
     X_train = scale_orig.fit_transform(dataset_orig_train.features)
     y_train = dataset_orig_train.labels.ravel()    
     X_vt = scale_orig.fit_transform(dataset_orig_vt.features)
     y_vt = dataset_orig_vt.labels.ravel()  
-   
-    dataset_orig_train_pred = dataset_orig_train.copy(deepcopy=True)
     privileged_groups = [{'Caucasian': 1}]
     unprivileged_groups = [{'Caucasian': 0}] #{'African_American': 1}
     cost_constraint = "fnr" 
     randseed = 12345679 
-    
+
+
+    dataset_orig_train_pred = dataset_orig_train.copy(deepcopy=True) 
+    dataset_orig_vt_pred = dataset_orig_vt.copy(deepcopy=True)
+
+    lmod = LogisticRegression()
+    lmod.fit(X_train, y_train)
+    y_train_pred = lmod.predict(X_train)
+
+    fav_idx = np.where(lmod.classes_ == dataset_orig_train.favorable_label)[0][0]
+    y_train_pred_prob = lmod.predict_proba(X_train)[:,fav_idx]
+
+
+    X_vt = scale_orig.transform(dataset_orig_vt.features)
+    y_vt_pred_prob = lmod.predict_proba(X_vt)[:,fav_idx]  
+    dataset_orig_vt_pred.scores = y_vt_pred_prob.reshape(-1,1)  
+
+    # dataset_orig_train_pred.labels = y_train_pred
+    dataset_orig_train_pred.scores = y_train_pred_prob.reshape(-1,1)
+
+    class_thresh = 0.5
+    y_train_pred = np.zeros_like(dataset_orig_train_pred.labels)
+    y_train_pred[y_train_pred_prob >= class_thresh] = dataset_orig_train_pred.favorable_label
+    y_train_pred[~(y_train_pred_prob >= class_thresh)] = dataset_orig_train_pred.unfavorable_label
+    dataset_orig_train_pred.labels = y_train_pred
+
+
+    y_vt_pred = np.zeros_like(dataset_orig_vt_pred.labels)
+    y_vt_pred[y_vt_pred_prob >= class_thresh] = dataset_orig_vt_pred.favorable_label
+    y_vt_pred[~(y_vt_pred_prob >= class_thresh)] = dataset_orig_vt_pred.unfavorable_label
+    dataset_orig_vt_pred.labels = y_vt_pred
+
     cpp = CalibratedEqOddsPostprocessing(privileged_groups = privileged_groups,
                                         unprivileged_groups = unprivileged_groups,
                                         cost_constraint=cost_constraint,
                                         seed=randseed)
-    cpp = cpp.fit(dataset_orig_train,  dataset_orig_train_pred)
+    cpp = cpp.fit(dataset_orig_train, dataset_orig_train_pred)
     
-    y_pred = cpp.predict(dataset_orig_vt).labels.ravel()
+    y_pred = cpp.predict(dataset_orig_vt_pred)
+    print(y_pred.labels.ravel())
+    print(accuracy_score(y_pred.labels.ravel(), y_vt))
 
-    return y_vt, y_pred, dataframe_orig_vt
+    return y_vt, y_pred.labels.ravel(), dataframe_orig_vt
+
 
 
 
