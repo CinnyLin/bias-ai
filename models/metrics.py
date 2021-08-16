@@ -164,14 +164,16 @@ def fairness_metrics(df, truth_label='recidivism_within_2_years', \
     pos1 = (fp1+tp1)/len1
     pos2 = (fp2+tp2)/len2
     
-    try:
-        demographic_parity = pos1/pos2
-        
-        if demographic_parity>1:
-            demographic_parity = pos2/pos1
+    demographic_parity = pos1 - pos2
     
-    except ZeroDivisionError:
-        demographic_parity = 0
+    # try:
+    #     demographic_parity = pos1/pos2
+        
+    #     if demographic_parity>1:
+    #         demographic_parity = pos2/pos1
+    
+    # except ZeroDivisionError:
+    #     demographic_parity = 0
     
     '''
     2. equal opportunity:
@@ -180,14 +182,16 @@ def fairness_metrics(df, truth_label='recidivism_within_2_years', \
     tnr1 = tn1/len1
     tnr2 = tn2/len2
     
-    try:
-        equal_opportunity = tnr1/tnr2
-        
-        if equal_opportunity>1:
-            equal_opportunity = tnr2/tnr1
+    equal_opportunity = tnr1 - tnr2
     
-    except ZeroDivisionError:
-        equal_opportunity = 0
+    # try:
+    #     equal_opportunity = tnr1/tnr2
+        
+    #     if equal_opportunity>1:
+    #         equal_opportunity = tnr2/tnr1
+    
+    # except ZeroDivisionError:
+    #     equal_opportunity = 0
     
     '''
     3. equalized odds: 
@@ -196,14 +200,16 @@ def fairness_metrics(df, truth_label='recidivism_within_2_years', \
     fnr1 = fn1/len1
     fnr2 = fn2/len2
     
-    try:
-        equalized_odds = fnr1/fnr2
+    equalized_odds = fnr1 - fnr2
     
-        if equalized_odds > 1:
-            equalized_odds = fnr2/fnr1
+    # try:
+    #     equalized_odds = fnr1/fnr2
     
-    except ZeroDivisionError:
-        equalized_odds = 0
+    #     if equalized_odds > 1:
+    #         equalized_odds = fnr2/fnr1
+    
+    # except ZeroDivisionError:
+    #     equalized_odds = 0
     
     '''
     4. calibration
@@ -217,13 +223,15 @@ def fairness_metrics(df, truth_label='recidivism_within_2_years', \
     calibration1 = predicted_positive_rate1/correct_positive_rate1
     calibration2 = predicted_positive_rate2/correct_positive_rate2
     
-    try:
-        calibration = calibration1/calibration2
-        
-        if calibration>1:
-            calibration = calibration2/calibration1
+    calibration = calibration1 - calibration2
     
-    except ZeroDivisionError:
-        calibration = 0
+    # try:
+    #     calibration = calibration1/calibration2
+        
+    #     if calibration>1:
+    #         calibration = calibration2/calibration1
+    
+    # except ZeroDivisionError:
+    #     calibration = 0
     
     return demographic_parity, equal_opportunity, equalized_odds, calibration

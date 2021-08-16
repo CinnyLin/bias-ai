@@ -305,10 +305,13 @@ bias_discussion_section = st.beta_expander("Bias Evaluation: Discussion on Model
 bias_discussion_section.markdown(bias_discussion)
 
 bias_metrics = '''
+        ### Metrics 
         Notions of fairness varies and are oftentimes conflicting. 
         The following are a few ways we used in our project to compare how models performed:
         
         1. **Demographic Parity**: proportion of positive decision should be the same across all groups.
+        
+        - Metric Calculation: **(false positive rate + true positive rate)/ population of the group**
         
         _For our project, this metric means that the rate of 
         labeling a defendant as high risk should be equal across
@@ -323,26 +326,54 @@ bias_metrics = '''
         2. **Equal Opportunity**: "true negative rate" (TNR) or "true positive rate" (TPR)
         should be equal for all groups, focusing on the advantaged outcome.
         
+        - Metric Calculation: **true negative rate / population of the group**
+        
         _Our project is a negative classification problem, 
         thus focusing on looking into true negative rates. 
         For our project, this metric means that the model 
         would correctly classify defendants who do not re-offend
         as low risk at equal rates for both black and white defendants._
         
+        
         3. **Equalized Odds**: "false negative rate" (FNR) and "true negative rate" (TNR) 
         should be equal across groups, focusing on the advantaged outcome.
+        
+        - Metric Calculation: **false netaive rate / population of the group**
+        and **true negative rate / population of the group**
         
         _Our project is a negative classification problem, 
         thus focusing on looking into true and false negative rates.
         Note that equalized odds is usually only possible by 
         introducing randomness in the decision-making procedure._
         
+        
         4. **Calibration**: model's predicted probability should be correct across all groups.
+        
+        - predicted_positive_rate = (true positive rate + false positive rate) / full population of the group
+        - correct_positive_rate1 = (true positive rate + false negative rate) / full population of the group
+        - Metric Calculation: **calibration = predicted_positive_rate / correct_positive_rate**
          
         _For our project, this metric means that among 
         the defendants of a given risk score, 
-        the proportion that would re-offend is the same for both groups._        
+        the proportion that would re-offend is the same for both groups._ 
+        
+        
+        #### Note 1
+        _For each metric, the score calculates the difference between 
+        Caucasian's metrics and African American's metrics,
+        i.e. **"Caucasian metric - African American metric".**_
+        _For example, if the demographic parity for Caucasians is `0.6` and that
+        the same metric for African American is `0.8`, 
+        then the overall demographic parity score is `-0.2`. _
+        
+        #### Note 2
+        _Since the proportion of true negative rates is already caluclated 
+        in the "equal opportunity" metric, we only calculate the propotion
+        of false negative rates in the "equalized odds" metric._
+        
         '''
+        
+        
 bias_metrics_section = st.beta_expander("Bias Evaluation: Fairness Metrics", False)
 bias_metrics_section.markdown(bias_metrics)
 
