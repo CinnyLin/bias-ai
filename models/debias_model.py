@@ -17,15 +17,16 @@ from aif360.algorithms.postprocessing.calibrated_eq_odds_postprocessing import C
 #load data
 import pandas as pd
 import numpy as np
+import streamlit as st
 
 def load_data(df, X, y):
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4, shuffle=True)#, random_state=42)
     df_train = pd.merge(X_train, y_train, left_index=True, right_index=True)
     df_test = pd.merge(X_test, y_test, left_index=True, right_index=True)
     
     # dataset_orig = StandardDataset(df,label_name='recidivism_within_2_years', favorable_classes=[1], protected_attribute_names=['race'], privileged_classes = [['Caucasian']], features_to_keep=X.columns.tolist())
-    dataset_orig_train = StandardDataset(df_train,label_name='recidivism_within_2_years', favorable_classes=[1], protected_attribute_names=['Caucasian'], privileged_classes = [[1]], features_to_keep=X.columns.tolist())
-    dataset_orig_vt = StandardDataset(df_test,label_name='recidivism_within_2_years', favorable_classes=[1], protected_attribute_names=['Caucasian'], privileged_classes = [[1]], features_to_keep=X.columns.tolist())
+    dataset_orig_train = StandardDataset(df_train,label_name='recidivism_within_2_years', favorable_classes=[0], protected_attribute_names=['Caucasian'], privileged_classes = [[1]], features_to_keep=X.columns.tolist())
+    dataset_orig_vt = StandardDataset(df_test,label_name='recidivism_within_2_years', favorable_classes=[0], protected_attribute_names=['Caucasian'], privileged_classes = [[1]], features_to_keep=X.columns.tolist())
 
     # dataset_orig_train, dataset_orig_test = dataset_orig.split([0.7], shuffle=True)
     # privileged_groups = [{'race': 1}]
@@ -92,7 +93,7 @@ def postprocessing_calibrated_eq_odd(df,X, y):
     privileged_groups = [{'Caucasian': 1}]
     unprivileged_groups = [{'Caucasian': 0}] #{'African_American': 1}
     cost_constraint = "fnr" 
-    randseed = 12345679 
+    # randseed = 12345679 
 
 
     dataset_orig_train_pred = dataset_orig_train.copy(deepcopy=True) 
@@ -127,8 +128,8 @@ def postprocessing_calibrated_eq_odd(df,X, y):
 
     cpp = CalibratedEqOddsPostprocessing(privileged_groups = privileged_groups,
                                         unprivileged_groups = unprivileged_groups,
-                                        cost_constraint=cost_constraint,
-                                        seed=randseed)
+                                        cost_constraint=cost_constraint)
+                                        # seed=randseed)
     cpp = cpp.fit(dataset_orig_train, dataset_orig_train_pred)
     
     y_pred = cpp.predict(dataset_orig_vt_pred)

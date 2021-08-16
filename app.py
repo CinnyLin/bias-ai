@@ -9,6 +9,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # custom modules
+# from models import metrics, models, debias_model
 from models import metrics, models#, debias_model
 import utils
 
@@ -734,10 +735,12 @@ naive_reduce_bias_section.pyplot(heatmap_fig_drop_race)
 # (1) Pre-processing
 # model evaluation metrics
 model_name = 'Pre-processing'
+
 # pre_y_pred = debias_model.preprocessing_Reweighing(df, X, y)
 # df[f'{model_name}'] = pre_y_pred
-# pre_df =  df.to_csv('data/pre_df.csv', index=False)
+# pre_df = df.to_csv('data/pre_df.csv', index=False)
 pre_df = pd.read_csv('data/pre_df.csv')
+
 pre_accuracy = metrics.get_accuracy(pre_df, pred_label=model_name)
 pre_precision = metrics.get_precision(pre_df, pred_label=model_name)
 pre_recall = metrics.get_recall(pre_df, pred_label=model_name)
@@ -786,10 +789,12 @@ preprocess_section.markdown(preprocess_text)
 # (2) In-processing
 # model evaluation metrics
 model_name = 'In-processing'
+
 # in_y_vt, in_y_pred, in_dataframe_orig_vt = debias_model.inprocessing_aversarial_debaising(df, X, y)
 # in_df = pd.DataFrame({'recidivism_within_2_years': in_y_vt, f'{model_name}': in_y_pred})
 # in_df.to_csv('data/in_df.csv', index=False)
 in_df = pd.read_csv('data/in_df.csv')
+
 in_accuracy = metrics.get_accuracy(in_df, pred_label=model_name)
 in_precision = metrics.get_precision(in_df, pred_label=model_name)
 in_recall = metrics.get_recall(in_df, pred_label=model_name)
@@ -802,6 +807,7 @@ in_eval = f'''
 # in_dataframe_orig_vt[f'{model_name}'] = in_y_pred
 # in_dataframe_orig_vt.to_csv('data/in_dataframe_orig_vt.csv', index=False)
 in_dataframe_orig_vt = pd.read_csv('data/in_dataframe_orig_vt.csv')
+
 # bias evaluation table
 in_p = metrics.propublica_analysis(in_dataframe_orig_vt, pred_label=model_name)
 in_bias_table = f'''
@@ -844,10 +850,12 @@ inprocess_section.markdown(inprocess_text)
 # (3) Post-processing
 # model evaluation metrics
 model_name = 'Post-processing'
+
 # post_y_vt, post_y_pred, post_dataframe_orig_vt = debias_model.postprocessing_calibrated_eq_odd(df, X, y)
 # post_df = pd.DataFrame({'recidivism_within_2_years': post_y_vt, f'{model_name}': post_y_pred})
 # post_df.to_csv('data/post_df.csv', index=False)
 post_df = pd.read_csv('data/post_df.csv')
+
 post_accuracy = metrics.get_accuracy(post_df, pred_label=model_name)
 post_precision = metrics.get_precision(post_df, pred_label=model_name)
 post_recall = metrics.get_recall(post_df, pred_label=model_name)
@@ -860,6 +868,7 @@ post_eval = f'''
 # post_dataframe_orig_vt[f'{model_name}'] = post_y_pred
 # post_dataframe_orig_vt.to_csv('data/post_dataframe_orig_vt.csv', index=False)
 post_dataframe_orig_vt = pd.read_csv('data/post_dataframe_orig_vt.csv')
+
 # bias evaluation table
 post_p = metrics.propublica_analysis(post_dataframe_orig_vt, pred_label=model_name)
 post_bias_table = f'''
