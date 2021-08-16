@@ -139,10 +139,20 @@ y_col = st.selectbox(label='Target variable (y)', options=['recidivism_within_2_
 
 #['sex_num', 'age', 'African_American', 'Caucasian',
 # 'priors_count', 'juv_fel_count', 'juv_misd_count', 'juv_other_count', ']
-default_input_features = list(num_cols.drop([y_col, 'id', 'COMPASS_determination']))
-X_cols = st.multiselect(label='Training variables (X)', options=default_input_features,
-                        default=default_input_features,
-                        help='''Only numerical columns are visible as options.''')
+
+# #originally: multiselect each features
+# default_input_features = list(num_cols.drop([y_col, 'id', 'COMPASS_determination']))
+# X_cols = st.multiselect(label='Training variables (X)', options=default_input_features,
+#                         default=default_input_features,
+#                         help='''Only numerical columns are visible as options.''')
+
+# #right now: cache results are display two options
+default_input_features1 = list(num_cols.drop([y_col, 'id', 'COMPASS_determination']))
+default_input_features2 = list(num_cols.drop([y_col, 'id', 'COMPASS_determination', 'African_American', 'Caucasian']))
+default_input_features = [default_input_features1, default_input_features2]
+X_cols = st.selectbox(label='Training variables (X)', options=default_input_features, index=0,
+                        help='''The default training variables are all the numerical variables in the dataset.\
+                                Alternatively, see how the prediction results change when you drop the two race variables.''')
 
 # get data
 y = df[y_col]
